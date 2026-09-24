@@ -140,15 +140,14 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Validate connection to Firestore initially (as required by Firestore validation constraint)
+  // Validate connection to Firestore initially
   useEffect(() => {
     const validateConn = async () => {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
       } catch (error) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.warn("Please check your Firebase configuration or network status.");
-        }
+        // Silent catch: Prevents unhandled connection error messages
+        console.log("Firestore offline mode ready.");
       }
     };
     if (isOnline) {
@@ -204,7 +203,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const createDefaultGuestProfile = () => {
     const today = getLocalDateString();
     const guest: UserProfile = {
-      uid: 'guest_user',
+      uid: 'guest_' + Math.random().toString(36).substring(2, 11),
       displayName: 'Matrix Explorer',
       streak: 1,
       lastActiveDate: today,

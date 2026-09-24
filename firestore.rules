@@ -76,7 +76,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && (request.auth.uid == userId);
       allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
       
-      allow create: if isEmailVerified()
+      allow create: if isSignedIn()
         && isValidId(userId)
         && request.auth.uid == userId
         && isValidUserProfile(incoming())
@@ -84,7 +84,7 @@ service cloud.firestore {
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
 
-      allow update: if isEmailVerified()
+      allow update: if isSignedIn()
         && isValidId(userId)
         && request.auth.uid == userId
         && isValidUserProfile(incoming())
@@ -102,7 +102,7 @@ service cloud.firestore {
     match /scores/{scoreId} {
       allow get, list: if true;
       
-      allow create: if isEmailVerified()
+      allow create: if isSignedIn()
         && isValidId(scoreId)
         && incoming().userId == request.auth.uid
         && isValidLeaderboardScore(incoming())
@@ -117,14 +117,14 @@ service cloud.firestore {
     match /matches/{matchId} {
       allow get, list: if isSignedIn();
       
-      allow create: if isEmailVerified()
+      allow create: if isSignedIn()
         && isValidId(matchId)
         && incoming().player1Id == request.auth.uid
         && isValidMultiplayerMatch(incoming())
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
         
-      allow update: if isEmailVerified()
+      allow update: if isSignedIn()
         && isValidId(matchId)
         && isValidMultiplayerMatch(incoming())
         && incoming().createdAt == existing().createdAt

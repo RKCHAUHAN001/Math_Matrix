@@ -122,19 +122,9 @@ function GameDashboard() {
     setGameActive(true);
   };
 
-  const handleStartOnlineGame = async () => {
+  const handleStartOnlineGame = () => {
     sounds.playClick();
-    if (!user) {
-      try {
-        await loginWithGoogle();
-        sounds.playSuccess();
-        setActiveOverlay('online_lobby');
-      } catch (e) {
-        console.error("Google authentication error:", e);
-      }
-      return;
-    }
-    // Authenticated: open competitive online lobby
+    // Allow immediate entry into the online matchmaking lobby using guest or synced account
     setActiveOverlay('online_lobby');
   };
 
@@ -582,7 +572,7 @@ function GameDashboard() {
 
           <div className="flex-1 flex flex-col justify-between max-w-sm mx-auto w-full relative z-10">
             <OnlineLobby 
-              user={user} 
+              user={user || { uid: profile?.uid || 'guest_user', displayName: profile?.displayName || 'Guest Explorer' }} 
               profile={profile} 
               theme={theme} 
               onClose={() => setActiveOverlay('none')} 
