@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with game progress and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 30 },
+        "socialLink": { "type": "string" },
+        "streak": { "type": "number" },
+        "lastActiveDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "highScore": { "type": "number" },
+        "theme": { "type": "string", "enum": ["monochrome", "oled", "matrix", "cyberpunk", "solarized"] },
+        "biometricsEnabled": { "type": "boolean" },
+        "notificationsEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "streak", "lastActiveDate", "highScore", "theme", "createdAt", "updatedAt"]
+    },
+    "LeaderboardScore": {
+      "title": "LeaderboardScore",
+      "description": "Game scores recorded by players for global rankings",
+      "type": "object",
+      "properties": {
+        "scoreId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 2, "maxLength": 30 },
+        "socialLink": { "type": "string" },
+        "score": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", "insane"] },
+        "matrixSize": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "score", "difficulty", "matrixSize", "createdAt"]
+    },
+    "MultiplayerMatch": {
+      "title": "MultiplayerMatch",
+      "description": "A real-time multiplayer duel match between two active players",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "type": { "type": "string", "enum": ["random", "room"] },
+        "status": { "type": "string", "enum": ["waiting", "active", "completed", "abandoned"] },
+        "player1Id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "player1Name": { "type": "string", "minLength": 2, "maxLength": 30 },
+        "player2Id": { "type": "string" },
+        "player2Name": { "type": "string" },
+        "target": { "type": "number" },
+        "formulaDisplay": { "type": "string" },
+        "formulaSize": { "type": "number" },
+        "winnerId": { "type": "string" },
+        "winnerName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["matchId", "type", "status", "player1Id", "player1Name", "target", "formulaDisplay", "formulaSize", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents"
+    },
+    "scores/{scoreId}": {
+      "schema": "LeaderboardScore",
+      "description": "High score entries"
+    },
+    "matches/{matchId}": {
+      "schema": "MultiplayerMatch",
+      "description": "Multiplayer match duel sessions"
+    }
+  }
+}
