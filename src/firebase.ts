@@ -2,35 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Helper to decode Base64 safely at runtime (bypasses static security scanners like Netlify's)
-const d = (s: string) => {
-  try {
-    return atob(s);
-  } catch {
-    return "";
-  }
-};
-
-// Obfuscated default credentials for Math Matrix project
-const fallbackConfig = {
-  apiKey: d("QUl6YVN5QUZNV3dKX1U2YXNqOFFaWUM0WGNfNkNwSkhlS3RUNHgw"),
-  authDomain: d("bWF0aC1tYXRyaXgtNzNiNjQuZmlyZWJhc2VhcHAuY29t"),
-  projectId: d("bWF0aC1tYXRyaXgtNzNiNjQ="),
-  storageBucket: d("bWF0aC1tYXRyaXgtNzNiNjQuZmlyZWJhc2VzdG9yYWdlLmFwcA=="),
-  messagingSenderId: d("MjQzOTQzNTQ2MDYw"),
-  appId: d("MToyNDM5NDM1NDYwNjA6d2ViOjBhYjIyOGUxMzRkNmRmZDU0ODc2Njk="),
-  firestoreDatabaseId: "",
-};
-
-// Support VITE_ environment variables (recommended for GitHub/Production) with automatic safe fallback
+// Support VITE_ environment variables (recommended for GitHub/Production)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || fallbackConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || fallbackConfig.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || fallbackConfig.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || fallbackConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || fallbackConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || fallbackConfig.appId,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || fallbackConfig.firestoreDatabaseId,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID,
 };
 
 // Initialize Firebase safely
