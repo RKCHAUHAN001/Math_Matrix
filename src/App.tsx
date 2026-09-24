@@ -420,7 +420,7 @@ function GameDashboard() {
               <div className="w-10 h-10 shrink-0 opacity-0" />
             </div>
 
-            {profile && (
+            {profile ? (
               <div className="space-y-4">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg">
                   <p className="text-[9px] font-black uppercase tracking-wider text-blue-400 mb-2">👤 Nickname Settings</p>
@@ -498,6 +498,16 @@ function GameDashboard() {
                 <div className="flex justify-center pt-2">
                   <PWAInstallButton theme={theme} />
                 </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div className="w-10 h-10 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-4" />
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                  Loading Settings Profile...
+                </p>
+                <p className="text-[10px] text-zinc-600 mt-2 max-w-[240px]">
+                  Setting up offline local storage fallback.
+                </p>
               </div>
             )}
           </div>

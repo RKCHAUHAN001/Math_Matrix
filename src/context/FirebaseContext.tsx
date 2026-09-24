@@ -159,15 +159,19 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Handle user authentication and profile synchronization
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-
-      if (currentUser) {
-        await loadAndSyncProfile(currentUser);
-      } else {
-        // Guest mode / offline mode profile fallback
+      try {
+        setUser(currentUser);
+        if (currentUser) {
+          await loadAndSyncProfile(currentUser);
+        } else {
+          loadGuestProfile();
+        }
+      } catch (e) {
+        console.error("Auth status sync error:", e);
         loadGuestProfile();
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -216,93 +220,98 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const loadAndSyncProfile = async (currentUser: User) => {
-    const profileRef = doc(db, 'users', currentUser.uid);
-    let firestoreProfile: UserProfile | null = null;
-
-    if (isOnline) {
-      try {
-        const docSnap = await getDoc(profileRef);
-        if (docSnap.exists()) {
-          firestoreProfile = docSnap.data() as UserProfile;
-        }
-      } catch (e) {
-        console.error("Failed to fetch profile from firestore:", e);
-      }
-    }
-
-    const local = localStorage.getItem(LOCAL_PROFILE_KEY);
-    let localProfile: UserProfile | null = null;
-    if (local) {
-      try {
-        localProfile = JSON.parse(local);
-      } catch (e) {}
-    }
-
-    let finalProfile: UserProfile;
-
-    if (firestoreProfile) {
-      // Compare high score and settings with local to pick the freshest
-      const mergedHighScore = Math.max(firestoreProfile.highScore || 0, localProfile?.highScore || 0);
-      const mergedStreak = Math.max(firestoreProfile.streak || 0, localProfile?.streak || 0);
-      
-      finalProfile = {
-        ...firestoreProfile,
-        highScore: mergedHighScore,
-        streak: mergedStreak,
-        socialLink: localProfile?.socialLink || firestoreProfile.socialLink || '',
-        theme: localProfile?.theme || firestoreProfile.theme || 'matrix',
-        biometricsEnabled: localProfile?.biometricsEnabled ?? firestoreProfile.biometricsEnabled ?? false,
-        notificationsEnabled: localProfile?.notificationsEnabled ?? firestoreProfile.notificationsEnabled ?? true,
-      };
-
-      // Check daily streak
-      finalProfile = verifyAndIncrementStreak(finalProfile);
-
-      // Save back to Firestore and LocalStorage
-      if (isOnline) {
-        try {
-          await setDoc(profileRef, {
-            ...finalProfile,
-            updatedAt: serverTimestamp()
-          }, { merge: true });
-        } catch (err) {
-          handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
-        }
-      }
-    } else {
-      // Profile does not exist in Firestore yet (new user)
-      const today = getLocalDateString();
-      finalProfile = {
-        uid: currentUser.uid,
-        displayName: currentUser.displayName || 'Anonymous player',
-        socialLink: localProfile?.socialLink || '',
-        streak: localProfile?.streak || 1,
-        lastActiveDate: localProfile?.lastActiveDate || today,
-        highScore: localProfile?.highScore || 0,
-        theme: localProfile?.theme || 'matrix',
-        biometricsEnabled: localProfile?.biometricsEnabled || false,
-        notificationsEnabled: localProfile?.notificationsEnabled || true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      finalProfile = verifyAndIncrementStreak(finalProfile);
+    try {
+      const profileRef = doc(db, 'users', currentUser.uid);
+      let firestoreProfile: UserProfile | null = null;
 
       if (isOnline) {
         try {
-          await setDoc(profileRef, {
-            ...finalProfile,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-        } catch (err) {
-          handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
+          const docSnap = await getDoc(profileRef);
+          if (docSnap.exists()) {
+            firestoreProfile = docSnap.data() as UserProfile;
+          }
+        } catch (e) {
+          console.error("Failed to fetch profile from firestore:", e);
         }
       }
-    }
 
-    setProfile(finalProfile);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(finalProfile));
+      const local = localStorage.getItem(LOCAL_PROFILE_KEY);
+      let localProfile: UserProfile | null = null;
+      if (local) {
+        try {
+          localProfile = JSON.parse(local);
+        } catch (e) {}
+      }
+
+      let finalProfile: UserProfile;
+
+      if (firestoreProfile) {
+        // Compare high score and settings with local to pick the freshest
+        const mergedHighScore = Math.max(firestoreProfile.highScore || 0, localProfile?.highScore || 0);
+        const mergedStreak = Math.max(firestoreProfile.streak || 0, localProfile?.streak || 0);
+        
+        finalProfile = {
+          ...firestoreProfile,
+          highScore: mergedHighScore,
+          streak: mergedStreak,
+          socialLink: localProfile?.socialLink || firestoreProfile.socialLink || '',
+          theme: localProfile?.theme || firestoreProfile.theme || 'matrix',
+          biometricsEnabled: localProfile?.biometricsEnabled ?? firestoreProfile.biometricsEnabled ?? false,
+          notificationsEnabled: localProfile?.notificationsEnabled ?? firestoreProfile.notificationsEnabled ?? true,
+        };
+
+        // Check daily streak
+        finalProfile = verifyAndIncrementStreak(finalProfile);
+
+        // Save back to Firestore and LocalStorage
+        if (isOnline) {
+          try {
+            await setDoc(profileRef, {
+              ...finalProfile,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+          } catch (err) {
+            handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
+          }
+        }
+      } else {
+        // Profile does not exist in Firestore yet (new user)
+        const today = getLocalDateString();
+        finalProfile = {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || 'Anonymous player',
+          socialLink: localProfile?.socialLink || '',
+          streak: localProfile?.streak || 1,
+          lastActiveDate: localProfile?.lastActiveDate || today,
+          highScore: localProfile?.highScore || 0,
+          theme: localProfile?.theme || 'matrix',
+          biometricsEnabled: localProfile?.biometricsEnabled || false,
+          notificationsEnabled: localProfile?.notificationsEnabled || true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        finalProfile = verifyAndIncrementStreak(finalProfile);
+
+        if (isOnline) {
+          try {
+            await setDoc(profileRef, {
+              ...finalProfile,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+          } catch (err) {
+            handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
+          }
+        }
+      }
+
+      setProfile(finalProfile);
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(finalProfile));
+    } catch (error) {
+      console.error("Error loading or syncing profile, falling back to guest profile:", error);
+      loadGuestProfile();
+    }
   };
 
   const verifyAndIncrementStreak = (p: UserProfile): UserProfile => {
