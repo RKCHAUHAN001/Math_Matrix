@@ -35,7 +35,9 @@ function GameDashboard() {
     isOnline, 
     loginWithGoogle, 
     logout,
-    updateProfileSocialLink
+    updateProfileSocialLink,
+    authError,
+    clearAuthError
   } = useFirebase();
 
   // Unified standard premium theme
@@ -43,6 +45,7 @@ function GameDashboard() {
 
   // Dialog/Modal overlays
   const [activeOverlay, setActiveOverlay] = useState<'none' | 'rankings' | 'settings' | 'levels' | 'online_lobby'>('none');
+  const [authHelpTab, setAuthHelpTab] = useState<'netlify_env' | 'permission_info'>('netlify_env');
   
   // Menu navigation state: 'main' displays (Play Offline, Play Online, Level)
   // 'play_offline' displays (Easy, Medium, Hard, Back)
@@ -580,6 +583,135 @@ function GameDashboard() {
 
       {/* Connection Monitor banners */}
       <OfflineIndicator />
+
+      {/* AUTH ERROR / DOMAIN TROUBLESHOOTING MODAL */}
+      {authError && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn text-white">
+          <div className="max-w-lg w-full rounded-3xl bg-zinc-950 border border-red-500/30 p-6 shadow-2xl relative">
+            <button 
+              onClick={clearAuthError}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">⚠️</span>
+              <div>
+                <h3 className="text-sm font-black tracking-widest text-red-400 uppercase">
+                  Google Authentication Guide
+                </h3>
+                <p className="text-[9px] text-zinc-500 uppercase tracking-wider mt-0.5">
+                  Custom Domain Solution
+                 </p>
+              </div>
+            </div>
+
+            {/* Tab buttons */}
+            <div className="flex border-b border-white/10 mb-4 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setAuthHelpTab('netlify_env')}
+                className={`flex-1 pb-2 border-b-2 font-bold transition-all ${
+                  authHelpTab === 'netlify_env' 
+                    ? 'border-emerald-500 text-emerald-400' 
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                ⚙️ Netlify Env (Recommended)
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthHelpTab('permission_info')}
+                className={`flex-1 pb-2 border-b-2 font-bold transition-all ${
+                  authHelpTab === 'permission_info' 
+                    ? 'border-emerald-500 text-emerald-400' 
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                🔒 Permission Info
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs text-zinc-300 max-h-[360px] overflow-y-auto pr-1">
+              {authHelpTab === 'netlify_env' ? (
+                <>
+                  <p className="leading-relaxed">
+                    Since this is a custom Netlify deploy on <code className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-sky-400 font-mono font-bold text-[10px]">mathmatrix.parivartya.in</code>, the easiest & best solution is to create your own free Firebase project, where you have full control to authorize your domain!
+                  </p>
+
+                  <div className="bg-white/5 border border-white/5 p-4 rounded-2xl space-y-3 font-medium text-[11px] text-zinc-200">
+                    <div>
+                      <p className="text-sky-400 font-bold mb-1">1. Create a free Firebase project</p>
+                      <p className="text-zinc-400 text-[10px]">
+                        Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-sky-400 font-black">Firebase Console</a>, click "Add Project", create a free Spark project, and enable <strong>Google Sign-In</strong> in Authentication.
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sky-400 font-bold mb-1">2. Add mathmatrix.parivartya.in to Authorized Domains</p>
+                      <p className="text-zinc-400 text-[10px]">
+                        Under <strong>Authentication</strong> → <strong>Settings</strong> tab → <strong>Authorized Domains</strong>, click <strong>Add Domain</strong> and add <code className="text-emerald-400 font-mono font-bold">mathmatrix.parivartya.in</code>. (Since you own this new project, the button will be fully enabled!)
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sky-400 font-bold mb-1">3. Set Netlify Environment Variables</p>
+                      <p className="text-zinc-400 text-[10px] mb-1">
+                        Go to your Netlify dashboard → Site Configuration → Environment Variables, and add your Firebase config variables:
+                      </p>
+                      <div className="bg-black/60 border border-white/10 p-2 rounded font-mono text-[9px] text-zinc-400 select-all whitespace-pre-wrap leading-normal">
+                        VITE_FIREBASE_API_KEY = "your-api-key"{"\n"}
+                        VITE_FIREBASE_AUTH_DOMAIN = "your-auth-domain"{"\n"}
+                        VITE_FIREBASE_PROJECT_ID = "your-project-id"{"\n"}
+                        VITE_FIREBASE_STORAGE_BUCKET = "your-storage-bucket"{"\n"}
+                        VITE_FIREBASE_MESSAGING_SENDER_ID = "your-sender-id"{"\n"}
+                        VITE_FIREBASE_APP_ID = "your-app-id"
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sky-400 font-bold mb-1">4. Re-trigger Netlify Deploy</p>
+                      <p className="text-zinc-400 text-[10px]">
+                        Trigger a new build or redeploy on Netlify. The site will automatically load your owned Firebase project and Google Sign-In will work perfectly!
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="leading-relaxed">
+                    <strong>Why you see the "ask project owner for necessary permission" message:</strong>
+                  </p>
+                  <p className="leading-relaxed text-zinc-400">
+                    The current Firebase project (<code className="text-sky-400 font-mono">mimetic-nation-g1b2m</code>) was automatically provisioned by the building systems for your local preview, and you are logged into Firebase under your personal Google account.
+                  </p>
+                  <p className="leading-relaxed text-zinc-400">
+                    Since the system-managed GCP project is owned by AI Studio, you do not have permission to modify its internal administrative settings (like Authorized Domains) from your console account.
+                  </p>
+                  <p className="leading-relaxed font-bold text-emerald-400">
+                    Solution:
+                  </p>
+                  <p className="leading-relaxed text-zinc-400">
+                    Follow the instructions under the <strong>⚙️ Netlify Env</strong> tab to configure your own free Firebase project. This gives you absolute ownership, full analytics, database controls, and domain authorization!
+                  </p>
+                </>
+              )}
+
+              <p className="text-[10px] text-zinc-400 italic leading-normal">
+                * Note: Google popup blocker has switched to Redirect Mode automatically to bypass browser cookie security filters.
+              </p>
+            </div>
+
+            <button
+              onClick={clearAuthError}
+              className="mt-6 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
+            >
+              Got it, Dismiss
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -65,6 +65,8 @@ interface FirebaseContextType {
   syncPendingData: () => Promise<void>;
   incrementStreakDirectly: () => Promise<void>;
   incrementTrophyDirectly: () => Promise<void>;
+  authError: string | null;
+  clearAuthError: () => void;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -78,7 +80,33 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [localLeaderboard, setLocalLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [authError, setAuthError] = useState<string | null>(null);
   const isOnline = useOnlineStatus();
+
+  const clearAuthError = () => setAuthError(null);
+
+  // Automatically listen for and resolve redirected sign-ins
+  useEffect(() => {
+    if (isOnline) {
+      const handleRedirectResult = async () => {
+        try {
+          const { getRedirectResult } = await import('firebase/auth');
+          const result = await getRedirectResult(auth);
+          if (result?.user) {
+            console.log("Resolved redirection sign-in successfully:", result.user.displayName);
+          }
+        } catch (err: any) {
+          console.error("Redirect sign-in lookup failed:", err);
+          if (err && err.code === 'auth/unauthorized-domain') {
+            setAuthError("This domain (mathmatrix.parivartya.in) is not authorized in Firebase Console yet. Please add it to Authentication -> Settings -> Authorized Domains.");
+          } else {
+            setAuthError(err.message || String(err));
+          }
+        }
+      };
+      handleRedirectResult();
+    }
+  }, [isOnline]);
 
   // Helper: Get local date string YYYY-MM-DD
   const getLocalDateString = () => {
@@ -355,13 +383,32 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const loginWithGoogle = async () => {
+    setAuthError(null);
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
-      if (error && error.code === 'auth/popup-closed-by-user') {
-        console.warn("User closed the Google Authentication popup window.");
+      console.warn("Popup sign-in failed, checking fallback:", error);
+      
+      // Auto fallback to redirect if popup is blocked, cancelled, or closed by the user
+      if (
+        error && 
+        (error.code === 'auth/popup-closed-by-user' || 
+         error.code === 'auth/popup-blocked' || 
+         error.code === 'auth/cancelled-popup-request')
+      ) {
+        try {
+          const { signInWithRedirect } = await import('firebase/auth');
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectErr: any) {
+          console.error("Redirect fallback login failed:", redirectErr);
+          setAuthError(redirectErr.message || String(redirectErr));
+        }
+      } else if (error && error.code === 'auth/unauthorized-domain') {
+        const msg = "The domain 'mathmatrix.parivartya.in' is not authorized in Firebase Console yet. Please add it to your Firebase Console under Authentication -> Settings -> Authorized Domains.";
+        setAuthError(msg);
+        console.error(msg);
       } else {
-        console.error("Google sign in failed:", error);
+        setAuthError(error.message || String(error));
       }
     }
   };
@@ -630,7 +677,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       localLeaderboard,
       syncPendingData,
       incrementStreakDirectly,
-      incrementTrophyDirectly
+      incrementTrophyDirectly,
+      authError,
+      clearAuthError
     }}>
       {children}
     </FirebaseContext.Provider>
