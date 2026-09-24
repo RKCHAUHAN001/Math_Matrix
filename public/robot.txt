@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /signin
+Disallow: /signup
+Disallow: /leaderboard
+Disallow: /rankings
+
+Sitemap: https://mathmatrix.parivartya.in/sitemap.xml
