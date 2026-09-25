@@ -1,6 +1,6 @@
 /**
  * @license
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: Apache-2.5
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -80,7 +80,6 @@ const generateNewPuzzle = () => {
     if (!solvedIndices.includes(randIdx)) solvedIndices.push(randIdx);
   }
   
-  // Safe default evaluations
   const operands = solvedIndices.map(idx => grid[idx]);
   const targetVal = evaluateFormula(formula.display, operands);
 
@@ -115,11 +114,19 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const [matchSearchSeconds, setMatchSearchSeconds] = useState<number>(0);
   const [isBotMatch, setIsBotMatch] = useState<boolean>(false);
 
+  // Rematch-specific states
+  const [isRematchRequestedByMe, setIsRematchRequestedByMe] = useState<boolean>(false);
+  const [isRematchRequestReceived, setIsRematchRequestReceived] = useState<boolean>(false);
+  const [rematchDeclinedMessage, setRematchDeclinedMessage] = useState<string | null>(null);
+
   // Match Time left (2 minutes speedrun)
   const [timeLeft, setTimeLeft] = useState<number>(120);
 
   // Grid selection
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+
+  // Stable round reference tracking to clear local UI reliably
+  const lastRoundRef = useRef<number>(1);
 
   // Persistent Guest ID to avoid changes between renders
   const persistentGuestIdRef = useRef<string | null>(null);
@@ -158,14 +165,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   }, [onlineSubMode]);
 
   // AI Bot solver simulation
-  // The bot solves 1 puzzle every 18-28 seconds
   useEffect(() => {
     let botTimer: any = null;
     if (isBotMatch && onlineSubMode === 'game_active' && matchData && matchData.status === 'active') {
       const solveTimeMs = Math.floor(Math.random() * 10000) + 18000;
       botTimer = setTimeout(() => {
         if (onlineSubModeRef.current === 'game_active') {
-          // Bot scores! Generate next puzzle
           const nextPuzzle = generateNewPuzzle();
           const currentBotScore = matchData.player2Score || 0;
           
@@ -183,7 +188,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           
           sounds.playFailure();
           setMatchData(updatedMatch);
-          setSelectedIndices([]); // Reset player's selected cells for new round
+          setSelectedIndices([]); // Reset player selected cells for new round
         }
       }, solveTimeMs);
     }
@@ -227,7 +232,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             sounds.playFailure();
           }
         } else if (isCreator) {
-          // Creator updates Firestore match status to completed
           try {
             const matchRef = doc(db, 'matches', activeMatchId!);
             const p1Score = matchData.player1Score || 0;
@@ -263,22 +267,37 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
       if (snapshot.exists()) {
         const data = snapshot.data();
-        const oldData = matchData;
         setMatchData(data);
 
-        // Player joined -> transition to active game screen
+        // Transition from matchmaking/waiting to game_active when 2nd player joins
         if (data.status === 'active' && (onlineSubModeRef.current === 'matchmaking' || onlineSubModeRef.current === 'room_waiting')) {
           sounds.playSuccess();
+          lastRoundRef.current = 1;
+          setSelectedIndices([]);
+          setTimeLeft(120);
           setOnlineSubMode('game_active');
         }
 
-        // Detect new round (e.g. currentRound has increased) -> reset local cells selection
-        if (oldData && data.currentRound > (oldData.currentRound || 1)) {
+        // Rematch triggered -> transition from game_over back to game_active
+        if (data.status === 'active' && onlineSubModeRef.current === 'game_over') {
+          sounds.playSuccess();
+          lastRoundRef.current = 1;
+          setSelectedIndices([]);
+          setTimeLeft(120);
+          setIsRematchRequestedByMe(false);
+          setIsRematchRequestReceived(false);
+          setRematchDeclinedMessage(null);
+          setOnlineSubMode('game_active');
+        }
+
+        // Detect new round (currentRound advanced) -> clear local grid inputs
+        if (data.currentRound > lastRoundRef.current) {
+          lastRoundRef.current = data.currentRound;
           setSelectedIndices([]);
           sounds.playSuccess();
         }
 
-        // Completed match
+        // Match Completed
         if (data.status === 'completed') {
           setOnlineSubMode('game_over');
           if (data.winnerId === currentUid) {
@@ -291,6 +310,27 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             sounds.playSuccess();
           } else {
             sounds.playFailure();
+          }
+
+          // Handle Rematch Requests in Real-Time
+          if (data.rematchRequestedBy) {
+            if (data.rematchRequestedBy === currentUid) {
+              setIsRematchRequestedByMe(true);
+              setIsRematchRequestReceived(false);
+            } else {
+              setIsRematchRequestedByMe(false);
+              setIsRematchRequestReceived(true);
+              sounds.playSuccess();
+            }
+          } else {
+            setIsRematchRequestedByMe(false);
+            setIsRematchRequestReceived(false);
+          }
+
+          if (data.rematchDeclined) {
+            setRematchDeclinedMessage("Challenger declined the rematch request.");
+            setIsRematchRequestedByMe(false);
+            setIsRematchRequestReceived(false);
           }
         }
 
@@ -393,6 +433,9 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setTrophyAwarded(false);
     setIsBotMatch(false);
     setTimeLeft(120);
+    setIsRematchRequestedByMe(false);
+    setIsRematchRequestReceived(false);
+    setRematchDeclinedMessage(null);
     setOnlineSubMode('lobby');
   };
 
@@ -657,6 +700,96 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setTimeout(() => setRulesCopied(false), 3000);
   };
 
+  // REQUEST REMATCH HANDLER
+  const handleRequestRematch = async () => {
+    sounds.playClick();
+    if (isBotMatch) {
+      sounds.playSuccess();
+      const puzzle = generateNewPuzzle();
+      const resetBotMatch = {
+        ...matchData,
+        status: 'active',
+        player1Score: 0,
+        player2Score: 0,
+        player1Selection: [],
+        player2Selection: [],
+        grid: puzzle.grid,
+        target: puzzle.target,
+        formulaDisplay: puzzle.formulaDisplay,
+        formulaSize: puzzle.formulaSize,
+        currentRound: 1,
+        expiresAt: Date.now() + 120000,
+        winnerId: null,
+        winnerName: null
+      };
+      setMatchData(resetBotMatch);
+      setSelectedIndices([]);
+      lastRoundRef.current = 1;
+      setTimeLeft(120);
+      setOnlineSubMode('game_active');
+      return;
+    }
+
+    try {
+      const matchRef = doc(db, 'matches', activeMatchId!);
+      await updateDoc(matchRef, {
+        rematchRequestedBy: currentUid,
+        rematchDeclined: false,
+        updatedAt: serverTimestamp()
+      });
+      setIsRematchRequestedByMe(true);
+    } catch (err) {
+      console.warn("Error requesting rematch:", err);
+    }
+  };
+
+  // ACCEPT REMATCH HANDLER
+  const handleAcceptRematch = async () => {
+    sounds.playSuccess();
+    const puzzle = generateNewPuzzle();
+
+    try {
+      const matchRef = doc(db, 'matches', activeMatchId!);
+      await updateDoc(matchRef, {
+        status: 'active',
+        player1Score: 0,
+        player2Score: 0,
+        player1Selection: [],
+        player2Selection: [],
+        grid: puzzle.grid,
+        target: puzzle.target,
+        formulaDisplay: puzzle.formulaDisplay,
+        formulaSize: puzzle.formulaSize,
+        currentRound: 1,
+        expiresAt: Date.now() + 120000,
+        winnerId: null,
+        winnerName: null,
+        rematchRequestedBy: null,
+        rematchAccepted: true,
+        rematchDeclined: false,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.warn("Error accepting rematch:", err);
+    }
+  };
+
+  // DECLINE REMATCH HANDLER
+  const handleDeclineRematch = async () => {
+    sounds.playClick();
+    try {
+      const matchRef = doc(db, 'matches', activeMatchId!);
+      await updateDoc(matchRef, {
+        rematchRequestedBy: null,
+        rematchDeclined: true,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.warn("Error declining rematch:", err);
+    }
+    resetToLobby();
+  };
+
   // MULTIPLAYER SOLVER CELL CLICK
   const handleCellClick = async (idx: number) => {
     if (!matchData || matchData.status !== 'active') return;
@@ -672,9 +805,11 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
     const maxFormulaSize = matchData.formulaSize;
     const finalSelection = newSelection.slice(0, maxFormulaSize);
+    
+    // 1. Instantly update client UI state
     setSelectedIndices(finalSelection);
 
-    // Sync current selected values with Firestore so the opponent sees them in real-time
+    // 2. Sync selection values with Firestore in real-time so opponent sees live typed numbers
     const currentValues = finalSelection.map(index => matchData.grid[index]);
     if (!isBotMatch) {
       try {
@@ -689,7 +824,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       }
     }
 
-    // Check solution when correct number of cells are selected
+    // 3. Evaluate solution as soon as the correct number of cells is tapped
     if (finalSelection.length === maxFormulaSize) {
       const operands = finalSelection.map(index => matchData.grid[index]);
       const resultCheck = evaluateFormula(matchData.formulaDisplay, operands);
@@ -697,7 +832,9 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       if (resultCheck === matchData.target) {
         sounds.playSuccess();
         
-        // Puzzle Solved! Award point and trigger NEXT speedrun puzzle
+        // Puzzle Solved! Instantly reset client selection so next puzzle doesn't lock typing
+        setSelectedIndices([]);
+        
         const nextPuzzle = generateNewPuzzle();
 
         if (isBotMatch) {
@@ -713,7 +850,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             formulaSize: nextPuzzle.formulaSize,
             currentRound: (prev.currentRound || 1) + 1
           }));
-          setSelectedIndices([]);
         } else {
           try {
             const matchRef = doc(db, 'matches', activeMatchId!);
@@ -737,7 +873,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           }
         }
       } else {
-        // Clear selections if incorrect
+        // Clear local inputs immediately if answer is incorrect
         sounds.playFailure();
         setSelectedIndices([]);
         if (!isBotMatch) {
@@ -1248,7 +1384,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         </div>
       )}
 
-      {/* 6. GAME OVER SPEEDRUN RESULTS SCREEN */}
+      {/* 6. GAME OVER SPEEDRUN RESULTS SCREEN WITH REMATCHING FLOW */}
       {onlineSubMode === 'game_over' && matchData && (
         <div className="flex-1 flex flex-col justify-center items-center py-4 w-full max-w-sm mx-auto select-none px-4">
           
@@ -1338,10 +1474,67 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               </>
             )}
 
-            <div className="w-full space-y-2">
+            {/* REMATCHING USER INTERFACE ACTIONS */}
+            <div className="w-full space-y-2.5">
+              
+              {/* REMATCH REQUEST DECLINED ERROR MESSAGE */}
+              {rematchDeclinedMessage && (
+                <p className="text-[9px] text-red-400 bg-red-950/20 border border-red-950 py-2 rounded-xl uppercase font-black tracking-widest leading-none">
+                  {rematchDeclinedMessage}
+                </p>
+              )}
+
+              {/* REMATCH REQUEST BUTTON STATES */}
+              {!isRematchRequestedByMe && !isRematchRequestReceived && (
+                <button
+                  onClick={handleRequestRematch}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 border border-emerald-400/20"
+                >
+                  <RefreshCw className="w-4 h-4 animate-spin-slow" /> Request Rematch
+                </button>
+              )}
+
+              {isRematchRequestedByMe && (
+                <div className="w-full p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                  <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest">
+                    Rematch Requested...
+                  </span>
+                  <span className="text-[8px] text-zinc-500">Waiting for Challenger to Accept</span>
+                </div>
+              )}
+
+              {isRematchRequestReceived && (
+                <div className="w-full p-4 rounded-2xl bg-zinc-900 border-2 border-dashed border-cyan-500/50 flex flex-col items-center justify-center gap-3 animate-pulse">
+                  <Swords className="w-6 h-6 text-cyan-400" />
+                  <div className="text-center">
+                    <span className="text-[10px] text-cyan-400 font-black uppercase tracking-widest block">
+                      Rematch Requested!
+                    </span>
+                    <span className="text-[8px] text-zinc-400 mt-1 block">
+                      Opponent wants to play again!
+                    </span>
+                  </div>
+                  <div className="flex gap-2 w-full mt-1">
+                    <button
+                      onClick={handleDeclineRematch}
+                      className="flex-1 py-2 rounded-xl bg-red-950/30 border border-red-900 text-red-400 font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      onClick={handleAcceptRematch}
+                      className="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all"
+                    >
+                      Accept
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={resetToLobby}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5"
               >
                 Exit to Lobby
               </button>
