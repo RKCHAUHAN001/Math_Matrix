@@ -140,20 +140,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Validate connection to Firestore initially
+  // Initialize offline cache and readiness
   useEffect(() => {
-    const validateConn = async () => {
-      try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        // Silent catch: Prevents unhandled connection error messages
-        console.log("Firestore offline mode ready.");
-      }
-    };
-    if (isOnline) {
-      validateConn();
-    }
-  }, [isOnline]);
+    // Offline / Online readiness is managed reactively via useOnlineStatus hook
+  }, []);
 
   // Handle user authentication and profile synchronization
   useEffect(() => {
