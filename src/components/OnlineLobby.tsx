@@ -26,7 +26,9 @@ import {
   RefreshCw,
   Sparkles,
   ShieldAlert,
-  ExternalLink
+  Timer,
+  Award,
+  Swords
 } from 'lucide-react';
 import { 
   doc, 
@@ -44,12 +46,51 @@ import { db } from '../firebase';
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
 
-// Dynamic formulas representing hard difficulty
+// Hard difficulty formulas
 const HARD_FORMULAS = [
-  { size: 3, display: "[A] * [B] - [C]", evaluate: (op: number[]) => op[0] * op[1] - op[2] },
-  { size: 3, display: "([A] - [B]) * [C]", evaluate: (op: number[]) => (op[0] - op[1]) * op[2] },
-  { size: 3, display: "[A] * [B] + [C]", evaluate: (op: number[]) => op[0] * op[1] + op[2] }
+  { size: 3, display: "[A] * [B] - [C]" },
+  { size: 3, display: "([A] - [B]) * [C]" },
+  { size: 3, display: "[A] * [B] + [C]" }
 ];
+
+// Helper to evaluate a formula with operands safely
+const evaluateFormula = (formulaDisplay: string, operands: number[]): number => {
+  if (operands.length < 3) return 0;
+  if (formulaDisplay === "[A] * [B] - [C]") {
+    return operands[0] * operands[1] - operands[2];
+  } else if (formulaDisplay === "([A] - [B]) * [C]") {
+    return (operands[0] - operands[1]) * operands[2];
+  } else if (formulaDisplay === "[A] * [B] + [C]") {
+    return operands[0] * operands[1] + operands[2];
+  }
+  return 0;
+};
+
+// Generate a random math-matrix puzzle
+const generateNewPuzzle = () => {
+  const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
+  const grid: number[] = [];
+  for (let i = 0; i < 16; i++) {
+    grid.push(Math.floor(Math.random() * 15) + 1);
+  }
+  
+  const solvedIndices: number[] = [];
+  while (solvedIndices.length < formula.size) {
+    const randIdx = Math.floor(Math.random() * 16);
+    if (!solvedIndices.includes(randIdx)) solvedIndices.push(randIdx);
+  }
+  
+  // Safe default evaluations
+  const operands = solvedIndices.map(idx => grid[idx]);
+  const targetVal = evaluateFormula(formula.display, operands);
+
+  return {
+    grid,
+    target: targetVal,
+    formulaDisplay: formula.display,
+    formulaSize: formula.size
+  };
+};
 
 interface OnlineLobbyProps {
   user: any;
@@ -74,11 +115,26 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const [matchSearchSeconds, setMatchSearchSeconds] = useState<number>(0);
   const [isBotMatch, setIsBotMatch] = useState<boolean>(false);
 
-  // Gameplay specific synchronization
+  // Match Time left (2 minutes speedrun)
+  const [timeLeft, setTimeLeft] = useState<number>(120);
+
+  // Grid selection
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
-  // Safe stable identifier across refresh & guests
-  const currentUid = user?.uid || profile?.uid || 'guest_' + Math.random().toString(36).substring(2, 9);
+  // Persistent Guest ID to avoid changes between renders
+  const persistentGuestIdRef = useRef<string | null>(null);
+  if (!persistentGuestIdRef.current) {
+    const cached = localStorage.getItem('MATH_MATRIX_PERSISTENT_GUEST_ID');
+    if (cached) {
+      persistentGuestIdRef.current = cached;
+    } else {
+      const newId = 'guest_' + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem('MATH_MATRIX_PERSISTENT_GUEST_ID', newId);
+      persistentGuestIdRef.current = newId;
+    }
+  }
+
+  const currentUid = user?.uid && user.uid !== 'guest_user' ? user.uid : (profile?.uid || persistentGuestIdRef.current);
   const currentDisplayName = profile?.displayName || user?.displayName || 'Matrix Explorer';
 
   const activeMatchIdRef = useRef<string | null>(null);
@@ -102,21 +158,32 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   }, [onlineSubMode]);
 
   // AI Bot solver simulation
+  // The bot solves 1 puzzle every 18-28 seconds
   useEffect(() => {
     let botTimer: any = null;
     if (isBotMatch && onlineSubMode === 'game_active' && matchData && matchData.status === 'active') {
-      // Bot solves the puzzle in 14-22 seconds
-      const solveTimeMs = Math.floor(Math.random() * 8000) + 14000;
+      const solveTimeMs = Math.floor(Math.random() * 10000) + 18000;
       botTimer = setTimeout(() => {
         if (onlineSubModeRef.current === 'game_active') {
-          setMatchData((prev: any) => ({
-            ...prev,
-            status: 'completed',
-            winnerId: 'bot_ai',
-            winnerName: 'AI Matrix Bot 🤖'
-          }));
+          // Bot scores! Generate next puzzle
+          const nextPuzzle = generateNewPuzzle();
+          const currentBotScore = matchData.player2Score || 0;
+          
+          const updatedMatch = {
+            ...matchData,
+            player2Score: currentBotScore + 1,
+            player2Selection: [],
+            player1Selection: [],
+            grid: nextPuzzle.grid,
+            target: nextPuzzle.target,
+            formulaDisplay: nextPuzzle.formulaDisplay,
+            formulaSize: nextPuzzle.formulaSize,
+            currentRound: (matchData.currentRound || 1) + 1
+          };
+          
           sounds.playFailure();
-          setOnlineSubMode('game_over');
+          setMatchData(updatedMatch);
+          setSelectedIndices([]); // Reset player's selected cells for new round
         }
       }, solveTimeMs);
     }
@@ -125,7 +192,66 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     };
   }, [isBotMatch, onlineSubMode, matchData]);
 
-  // 1. ACTIVE MATCH LISTENER (Listens to the active match document)
+  // Game timer countdown logic (120 seconds duration)
+  useEffect(() => {
+    if (onlineSubMode !== 'game_active' || !matchData) return;
+
+    const timerInterval = setInterval(async () => {
+      const now = Date.now();
+      const expiresAt = matchData.expiresAt || (now + 120000);
+      const remaining = Math.max(0, Math.round((expiresAt - now) / 1000));
+      
+      setTimeLeft(remaining);
+
+      // When match timer expires, complete the match
+      if (remaining === 0) {
+        clearInterval(timerInterval);
+        
+        if (isBotMatch) {
+          const finalMatch = {
+            ...matchData,
+            status: 'completed',
+            winnerId: matchData.player1Score > matchData.player2Score 
+              ? currentUid 
+              : matchData.player1Score < matchData.player2Score ? 'bot_ai' : 'draw',
+            winnerName: matchData.player1Score > matchData.player2Score 
+              ? currentDisplayName 
+              : matchData.player1Score < matchData.player2Score ? 'AI Matrix Bot 🤖' : 'Tied Duel'
+          };
+          setMatchData(finalMatch);
+          setOnlineSubMode('game_over');
+          if (finalMatch.winnerId === currentUid) {
+            sounds.playSuccess();
+            incrementTrophyDirectly();
+          } else {
+            sounds.playFailure();
+          }
+        } else if (isCreator) {
+          // Creator updates Firestore match status to completed
+          try {
+            const matchRef = doc(db, 'matches', activeMatchId!);
+            const p1Score = matchData.player1Score || 0;
+            const p2Score = matchData.player2Score || 0;
+            const winnerId = p1Score > p2Score ? matchData.player1Id : p1Score < p2Score ? matchData.player2Id : 'draw';
+            const winnerName = p1Score > p2Score ? matchData.player1Name : p1Score < p2Score ? matchData.player2Name : 'Tied Duel';
+            
+            await updateDoc(matchRef, {
+              status: 'completed',
+              winnerId,
+              winnerName,
+              updatedAt: serverTimestamp()
+            });
+          } catch (err) {
+            console.error("Error setting game timer complete:", err);
+          }
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [onlineSubMode, matchData, isBotMatch, isCreator, currentUid, currentDisplayName, activeMatchId]);
+
+  // Real-Time Match Data Synchronizer
   useEffect(() => {
     if (!activeMatchId || isBotMatch) return;
 
@@ -137,38 +263,52 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
       if (snapshot.exists()) {
         const data = snapshot.data();
+        const oldData = matchData;
         setMatchData(data);
 
-        // Transition from matchmaking/waiting to game_active when 2nd player joins
+        // Player joined -> transition to active game screen
         if (data.status === 'active' && (onlineSubModeRef.current === 'matchmaking' || onlineSubModeRef.current === 'room_waiting')) {
           sounds.playSuccess();
           setOnlineSubMode('game_active');
         }
 
-        // Check for game completion
-        if (data.status === 'completed' && data.winnerId) {
-          setIsCreator(false);
+        // Detect new round (e.g. currentRound has increased) -> reset local cells selection
+        if (oldData && data.currentRound > (oldData.currentRound || 1)) {
+          setSelectedIndices([]);
+          sounds.playSuccess();
+        }
+
+        // Completed match
+        if (data.status === 'completed') {
           setOnlineSubMode('game_over');
           if (data.winnerId === currentUid) {
             sounds.playSuccess();
-            if (!trophyAwarded && data.type === 'random') {
+            if (!trophyAwarded) {
               setTrophyAwarded(true);
               incrementTrophyDirectly();
             }
+          } else if (data.winnerId === 'draw') {
+            sounds.playSuccess();
           } else {
             sounds.playFailure();
           }
         }
 
-        // Check for abandonment
+        // Abandoned match / Rage quit -> instant victory for the remaining player!
         if (data.status === 'abandoned') {
-          sounds.playFailure();
-          setErrorMessage("Opponent left or disconnected from the match.");
-          resetToLobby();
+          sounds.playSuccess();
+          setMatchData({
+            ...data,
+            status: 'completed',
+            winnerId: currentUid,
+            winnerName: currentDisplayName,
+            abandonedByOpponent: true
+          });
+          setOnlineSubMode('game_over');
         }
       }
     }, (err) => {
-      console.warn("Match snapshot listener note:", err);
+      console.warn("Active match subscription warning:", err);
       if (err?.code === 'permission-denied') {
         setShowRulesModal(true);
       }
@@ -178,10 +318,9 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       isSubscribed = false;
       unsubscribe();
     };
-  }, [activeMatchId, isBotMatch, currentUid, trophyAwarded, incrementTrophyDirectly]);
+  }, [activeMatchId, isBotMatch, currentUid, currentDisplayName, trophyAwarded, incrementTrophyDirectly]);
 
-  // 2. CONTINUOUS MATCHMAKING QUEUE LISTENER
-  // If player is in 'matchmaking' mode, continuously listen for other waiting random matches
+  // Matchmaking Continuous Finder
   useEffect(() => {
     if (onlineSubMode !== 'matchmaking' || isBotMatch) return;
 
@@ -196,7 +335,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       if (!isSubscribed || onlineSubModeRef.current !== 'matchmaking') return;
 
-      // Find any other player's waiting match
       const otherMatches = snapshot.docs
         .map(docSnap => ({ id: docSnap.id, ...docSnap.data() as any }))
         .filter(m => m.player1Id !== currentUid && m.id !== activeMatchIdRef.current);
@@ -204,12 +342,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       if (otherMatches.length > 0) {
         const targetMatch = otherMatches[0];
         try {
-          // Connect to the found opponent's match!
           const targetRef = doc(db, 'matches', targetMatch.id);
+          
           await updateDoc(targetRef, {
             player2Id: currentUid,
             player2Name: currentDisplayName,
             status: 'active',
+            expiresAt: Date.now() + 120000, // 2-minute timer starts now
             updatedAt: serverTimestamp()
           });
 
@@ -220,20 +359,21 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             ...targetMatch,
             player2Id: currentUid,
             player2Name: currentDisplayName,
-            status: 'active'
+            status: 'active',
+            expiresAt: Date.now() + 120000
           });
           setIsCreator(false);
           sounds.playSuccess();
           setOnlineSubMode('game_active');
         } catch (err: any) {
-          console.warn("Failed claiming opponent match:", err);
+          console.warn("Matchmaking connect error:", err);
           if (err?.code === 'permission-denied') {
             setShowRulesModal(true);
           }
         }
       }
     }, (err) => {
-      console.warn("Queue subscription warning:", err);
+      console.warn("Queue loop note:", err);
       if (err?.code === 'permission-denied') {
         setShowRulesModal(true);
       }
@@ -252,6 +392,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setIsCreator(false);
     setTrophyAwarded(false);
     setIsBotMatch(false);
+    setTimeLeft(120);
     setOnlineSubMode('lobby');
   };
 
@@ -260,15 +401,9 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     if (targetId && !isBotMatch) {
       try {
         const matchRef = doc(db, 'matches', targetId);
-        const snap = await getDoc(matchRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.status === 'waiting' || data.status === 'active') {
-            await updateDoc(matchRef, { status: 'abandoned', updatedAt: serverTimestamp() });
-          }
-        }
+        await updateDoc(matchRef, { status: 'abandoned', updatedAt: serverTimestamp() });
       } catch (err) {
-        console.warn("Error recording abort: ", err);
+        console.warn("Error setting abort status: ", err);
       }
     }
     resetToLobby();
@@ -280,23 +415,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setErrorMessage(null);
     setIsBotMatch(false);
 
-    // Deterministic match id for the host player
-    const newMatchId = 'rand_' + currentUid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) + '_' + Math.random().toString(36).substring(2, 6);
-    
-    // Generate uniform game parameters
-    const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
-    const grid: number[] = [];
-    for (let i = 0; i < 16; i++) {
-      grid.push(Math.floor(Math.random() * 15) + 1);
-    }
-    
-    const solvedIndices: number[] = [];
-    while (solvedIndices.length < formula.size) {
-      const randIdx = Math.floor(Math.random() * 16);
-      if (!solvedIndices.includes(randIdx)) solvedIndices.push(randIdx);
-    }
-    const operands = solvedIndices.map(idx => grid[idx]);
-    const targetVal = formula.evaluate(operands);
+    const newMatchId = 'rand_' + currentUid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) + '_' + Math.random().toString(36).substring(2, 6);
+    const puzzle = generateNewPuzzle();
 
     const newMatchPayload = {
       matchId: newMatchId,
@@ -306,23 +426,26 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       player1Name: currentDisplayName,
       player2Id: null,
       player2Name: null,
-      grid: grid,
-      target: targetVal,
-      formulaDisplay: formula.display,
-      formulaSize: formula.size,
+      grid: puzzle.grid,
+      target: puzzle.target,
+      formulaDisplay: puzzle.formulaDisplay,
+      formulaSize: puzzle.formulaSize,
       winnerId: null,
       winnerName: null,
+      player1Score: 0,
+      player2Score: 0,
+      player1Selection: [],
+      player2Selection: [],
+      currentRound: 1,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
-    // 1. Immediately switch to matchmaking view
     setActiveMatchId(newMatchId);
     setMatchData(newMatchPayload);
     setIsCreator(true);
     setOnlineSubMode('matchmaking');
 
-    // 2. Query available queue first, or publish own match
     try {
       const matchesRef = collection(db, 'matches');
       const q = query(
@@ -337,7 +460,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         .filter(m => m.player1Id !== currentUid);
 
       if (waitingMatches.length > 0) {
-        // Connect to existing waiting match
         const chosenMatch = waitingMatches[0];
         const matchRef = doc(db, 'matches', chosenMatch.id);
         
@@ -345,6 +467,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           player2Id: currentUid,
           player2Name: currentDisplayName,
           status: 'active',
+          expiresAt: Date.now() + 120000,
           updatedAt: serverTimestamp()
         });
 
@@ -353,18 +476,18 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           ...chosenMatch,
           player2Id: currentUid,
           player2Name: currentDisplayName,
-          status: 'active'
+          status: 'active',
+          expiresAt: Date.now() + 120000
         });
         setIsCreator(false);
         setOnlineSubMode('game_active');
         sounds.playSuccess();
       } else {
-        // Publish our waiting match to Firestore
         const matchRef = doc(db, 'matches', newMatchId);
         await setDoc(matchRef, newMatchPayload);
       }
     } catch (err: any) {
-      console.warn("Matchmaking register note:", err);
+      console.warn("Queue registry issue:", err);
       if (err?.code === 'permission-denied') {
         setShowRulesModal(true);
       }
@@ -377,18 +500,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setErrorMessage(null);
     setIsBotMatch(true);
 
-    const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
-    const grid: number[] = [];
-    for (let i = 0; i < 16; i++) {
-      grid.push(Math.floor(Math.random() * 15) + 1);
-    }
-    const solvedIndices: number[] = [];
-    while (solvedIndices.length < formula.size) {
-      const randIdx = Math.floor(Math.random() * 16);
-      if (!solvedIndices.includes(randIdx)) solvedIndices.push(randIdx);
-    }
-    const operands = solvedIndices.map(idx => grid[idx]);
-    const targetVal = formula.evaluate(operands);
+    const puzzle = generateNewPuzzle();
 
     const botMatchData = {
       matchId: 'bot_' + Math.random().toString(36).substring(2, 8),
@@ -398,10 +510,16 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       player1Name: currentDisplayName,
       player2Id: 'bot_ai',
       player2Name: 'AI Matrix Bot 🤖',
-      grid: grid,
-      target: targetVal,
-      formulaDisplay: formula.display,
-      formulaSize: formula.size,
+      grid: puzzle.grid,
+      target: puzzle.target,
+      formulaDisplay: puzzle.formulaDisplay,
+      formulaSize: puzzle.formulaSize,
+      player1Score: 0,
+      player2Score: 0,
+      player1Selection: [],
+      player2Selection: [],
+      currentRound: 1,
+      expiresAt: Date.now() + 120000,
       winnerId: null,
       winnerName: null
     };
@@ -418,26 +536,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setErrorMessage(null);
     setIsBotMatch(false);
 
-    // Generate unique 4-character uppercase code
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 4; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 
-    const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
-    const grid: number[] = [];
-    for (let i = 0; i < 16; i++) {
-      grid.push(Math.floor(Math.random() * 15) + 1);
-    }
-    
-    const solvedIndices: number[] = [];
-    while (solvedIndices.length < formula.size) {
-      const randIdx = Math.floor(Math.random() * 16);
-      if (!solvedIndices.includes(randIdx)) solvedIndices.push(randIdx);
-    }
-    const operands = solvedIndices.map(idx => grid[idx]);
-    const targetVal = formula.evaluate(operands);
+    const puzzle = generateNewPuzzle();
 
     const roomPayload = {
       matchId: code,
@@ -447,28 +552,31 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       player1Name: currentDisplayName,
       player2Id: null,
       player2Name: null,
-      grid: grid,
-      target: targetVal,
-      formulaDisplay: formula.display,
-      formulaSize: formula.size,
+      grid: puzzle.grid,
+      target: puzzle.target,
+      formulaDisplay: puzzle.formulaDisplay,
+      formulaSize: puzzle.formulaSize,
+      player1Score: 0,
+      player2Score: 0,
+      player1Selection: [],
+      player2Selection: [],
+      currentRound: 1,
       winnerId: null,
       winnerName: null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
-    // 1. Immediately set the code so the UI displays it with ZERO delay!
     setActiveMatchId(code);
     setMatchData(roomPayload);
     setIsCreator(true);
     setOnlineSubMode('room_waiting');
 
-    // 2. Save document to Firestore
     try {
       const matchRef = doc(db, 'matches', code);
       await setDoc(matchRef, roomPayload);
     } catch (err: any) {
-      console.warn("Room creation Firestore write note:", err);
+      console.warn("Room creation error:", err);
       if (err?.code === 'permission-denied') {
         setShowRulesModal(true);
       }
@@ -497,6 +605,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             player2Id: currentUid,
             player2Name: currentDisplayName,
             status: 'active',
+            expiresAt: Date.now() + 120000,
             updatedAt: serverTimestamp()
           });
 
@@ -505,7 +614,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             ...data,
             player2Id: currentUid,
             player2Name: currentDisplayName,
-            status: 'active'
+            status: 'active',
+            expiresAt: Date.now() + 120000
           });
           setIsCreator(false);
           setOnlineSubMode('game_active');
@@ -547,92 +657,159 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setTimeout(() => setRulesCopied(false), 3000);
   };
 
-  // MULTIPLAYER SOLVER CLICKS
+  // MULTIPLAYER SOLVER CELL CLICK
   const handleCellClick = async (idx: number) => {
     if (!matchData || matchData.status !== 'active') return;
 
     sounds.playClick();
 
+    let newSelection = [...selectedIndices];
     if (selectedIndices.includes(idx)) {
-      setSelectedIndices(prev => prev.filter(i => i !== idx));
-      return;
+      newSelection = selectedIndices.filter(i => i !== idx);
+    } else {
+      newSelection = [...selectedIndices, idx];
     }
 
-    const newSelection = [...selectedIndices, idx];
     const maxFormulaSize = matchData.formulaSize;
+    const finalSelection = newSelection.slice(0, maxFormulaSize);
+    setSelectedIndices(finalSelection);
 
-    if (newSelection.length < maxFormulaSize) {
-      setSelectedIndices(newSelection);
-    } else {
-      // Evaluate solution
-      const operands = newSelection.map(index => matchData.grid[index]);
-      
-      let resultCheck = 0;
-      if (matchData.formulaDisplay.includes('*') && matchData.formulaDisplay.includes('-')) {
-        resultCheck = operands[0] * operands[1] - operands[2];
-      } else if (matchData.formulaDisplay.includes('(')) {
-        resultCheck = (operands[0] - operands[1]) * operands[2];
-      } else {
-        resultCheck = operands[0] * operands[1] + operands[2];
+    // Sync current selected values with Firestore so the opponent sees them in real-time
+    const currentValues = finalSelection.map(index => matchData.grid[index]);
+    if (!isBotMatch) {
+      try {
+        const matchRef = doc(db, 'matches', activeMatchId!);
+        if (currentUid === matchData.player1Id) {
+          await updateDoc(matchRef, { player1Selection: currentValues });
+        } else {
+          await updateDoc(matchRef, { player2Selection: currentValues });
+        }
+      } catch (err) {
+        console.warn("Failed selection sync:", err);
       }
+    }
+
+    // Check solution when correct number of cells are selected
+    if (finalSelection.length === maxFormulaSize) {
+      const operands = finalSelection.map(index => matchData.grid[index]);
+      const resultCheck = evaluateFormula(matchData.formulaDisplay, operands);
 
       if (resultCheck === matchData.target) {
         sounds.playSuccess();
+        
+        // Puzzle Solved! Award point and trigger NEXT speedrun puzzle
+        const nextPuzzle = generateNewPuzzle();
+
         if (isBotMatch) {
+          const currentScore = matchData.player1Score || 0;
           setMatchData((prev: any) => ({
             ...prev,
-            status: 'completed',
-            winnerId: currentUid,
-            winnerName: currentDisplayName
+            player1Score: currentScore + 1,
+            player1Selection: [],
+            player2Selection: [],
+            grid: nextPuzzle.grid,
+            target: nextPuzzle.target,
+            formulaDisplay: nextPuzzle.formulaDisplay,
+            formulaSize: nextPuzzle.formulaSize,
+            currentRound: (prev.currentRound || 1) + 1
           }));
-          setOnlineSubMode('game_over');
-          if (!trophyAwarded) {
-            setTrophyAwarded(true);
-            incrementTrophyDirectly();
-          }
+          setSelectedIndices([]);
         } else {
           try {
             const matchRef = doc(db, 'matches', activeMatchId!);
+            const isP1 = currentUid === matchData.player1Id;
+            const updatedScore = isP1 ? (matchData.player1Score || 0) + 1 : (matchData.player2Score || 0) + 1;
+
             await updateDoc(matchRef, {
-              status: 'completed',
-              winnerId: currentUid,
-              winnerName: currentDisplayName,
+              player1Score: isP1 ? updatedScore : (matchData.player1Score || 0),
+              player2Score: !isP1 ? updatedScore : (matchData.player2Score || 0),
+              player1Selection: [],
+              player2Selection: [],
+              grid: nextPuzzle.grid,
+              target: nextPuzzle.target,
+              formulaDisplay: nextPuzzle.formulaDisplay,
+              formulaSize: nextPuzzle.formulaSize,
+              currentRound: (matchData.currentRound || 1) + 1,
               updatedAt: serverTimestamp()
             });
           } catch (err) {
-            console.error("Error committing win: ", err);
+            console.error("Error submitting solved round: ", err);
           }
         }
       } else {
+        // Clear selections if incorrect
         sounds.playFailure();
         setSelectedIndices([]);
+        if (!isBotMatch) {
+          try {
+            const matchRef = doc(db, 'matches', activeMatchId!);
+            if (currentUid === matchData.player1Id) {
+              await updateDoc(matchRef, { player1Selection: [] });
+            } else {
+              await updateDoc(matchRef, { player2Selection: [] });
+            }
+          } catch (e) {}
+        }
       }
     }
   };
 
-  const renderFormulaWithBlanks = () => {
+  const formatTimerValue = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Helper to render static/typed elements of formula equation
+  const renderFormulaBlocks = (isOpponent: boolean) => {
     if (!matchData) return null;
 
-    let display = matchData.formulaDisplay;
-    const alphabet = ['A', 'B', 'C', 'D'];
+    const selections = isOpponent 
+      ? (currentUid === matchData.player1Id ? (matchData.player2Selection || []) : (matchData.player1Selection || []))
+      : selectedIndices.map(index => matchData.grid[index]);
 
-    alphabet.forEach((letter, idx) => {
-      if (idx < matchData.formulaSize) {
-        const replacement = selectedIndices.length > idx 
-          ? `<span class="px-2 py-1 mx-1 rounded border border-zinc-700 font-bold text-white bg-zinc-800 text-xs">${matchData.grid[selectedIndices[idx]]}</span>`
-          : `<span class="px-2.5 py-1 mx-1 rounded border-2 border-dashed border-zinc-700 text-xs text-zinc-600 animate-pulse bg-zinc-950/20 font-bold">?</span>`;
-        
-        display = display.replace(`[${letter}]`, replacement);
-      }
-    });
+    const display = matchData.formulaDisplay;
+    const alphabet = ['A', 'B', 'C'];
 
     return (
-      <div 
-        className="flex items-center justify-center font-mono py-2 tracking-widest leading-relaxed text-zinc-400"
-        dangerouslySetInnerHTML={{ __html: display }}
-      />
+      <div className="flex items-center justify-center gap-2 font-mono text-zinc-400">
+        {alphabet.map((letter, idx) => {
+          if (idx >= matchData.formulaSize) return null;
+
+          const selectionValue = selections[idx] !== undefined ? selections[idx] : null;
+          const isFilled = selectionValue !== null;
+
+          return (
+            <React.Fragment key={letter}>
+              {/* Box container */}
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-black transition-all ${
+                isFilled 
+                  ? (isOpponent ? 'border-pink-500/50 bg-pink-950/20 text-pink-400' : 'border-cyan-500/50 bg-cyan-950/20 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.3)]')
+                  : 'border-2 border-dashed border-zinc-800 text-zinc-700 animate-pulse bg-zinc-950/30'
+              }`}>
+                {isFilled ? selectionValue : '?'}
+              </div>
+
+              {/* Math Operators in-between */}
+              {idx === 0 && <span className="text-zinc-600 text-xs font-bold font-sans">*</span>}
+              {idx === 1 && (
+                <span className="text-zinc-600 text-xs font-bold font-sans">
+                  {display.includes('-') ? '-' : '+'}
+                </span>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
     );
   };
+
+  const isPlayer1 = matchData && currentUid === matchData.player1Id;
+  const p1Name = matchData ? matchData.player1Name : currentDisplayName;
+  const p2Name = matchData ? (matchData.player2Name || 'AI Bot') : 'Challenger';
+
+  const myScore = matchData ? (isPlayer1 ? (matchData.player1Score || 0) : (matchData.player2Score || 0)) : 0;
+  const opponentScore = matchData ? (isPlayer1 ? (matchData.player2Score || 0) : (matchData.player1Score || 0)) : 0;
 
   return (
     <div className="w-full flex flex-col h-full text-white animate-fadeIn pb-2 justify-between">
@@ -965,64 +1142,91 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
       {/* 5. ACTIVE MULTIPLAYER PLAYING GAME BOARD */}
       {onlineSubMode === 'game_active' && matchData && (
-        <div className="flex-1 flex flex-col items-center justify-between w-full max-w-sm mx-auto animate-fadeIn">
+        <div className="flex-1 flex flex-col items-center justify-between w-full max-w-md mx-auto animate-fadeIn select-none px-4">
           
-          {/* Header Stats bar */}
-          <div className={`w-full rounded-xl border ${theme.border} bg-black/40 p-2.5 mb-2 flex items-center justify-between shadow-md`}>
-            <div>
-              <p className="text-[8px] uppercase tracking-wider text-blue-400 font-bold">VS Match ID</p>
-              <p className="text-xs font-black tracking-wider text-white font-mono">{activeMatchId}</p>
-            </div>
-
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[8px] text-red-400 font-black tracking-widest uppercase animate-pulse">
-              <Globe className="w-3 h-3 text-red-400" /> Competitive Duel
-            </div>
-
-            <div className="text-right">
-              <p className="text-[8px] uppercase tracking-wider text-zinc-500">Opponent</p>
-              <p className="text-xs font-bold text-zinc-300 uppercase tracking-wide truncate max-w-[90px]">
-                {currentUid === matchData.player1Id ? (matchData.player2Name || 'Challenger') : matchData.player1Name}
-              </p>
-            </div>
-          </div>
-
-          {/* Equation Formula Header */}
-          <div className="w-full rounded-xl border border-zinc-900 bg-black/35 p-2.5 mb-2 text-center relative">
-            <div className="flex justify-between items-center mb-1 px-1">
-              <span className="text-[8px] uppercase tracking-widest font-bold text-zinc-500">Equation</span>
-              <span className="text-[9px] font-black font-mono tracking-wide text-cyan-400 animate-pulse">
-                SOLVER WINS
+          {/* HIGH-FIDELITY MATCH HEADER HEADER: You vs Opponent */}
+          <div className="w-full rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3.5 mb-3.5 flex items-center justify-between relative shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-col items-start flex-1 min-w-0">
+              <span className="text-[8px] uppercase font-bold tracking-widest text-zinc-500">You</span>
+              <span className="text-xs font-black text-white truncate max-w-[120px] uppercase font-mono tracking-wider">
+                {currentDisplayName}
+              </span>
+              <span className="text-[10px] font-black text-cyan-400 font-mono mt-0.5">
+                {myScore} Solved
               </span>
             </div>
 
-            {renderFormulaWithBlanks()}
+            <div className="text-center px-4 shrink-0 flex flex-col items-center">
+              <div className="text-sm font-black text-cyan-400 tracking-[0.25em] pl-1 animate-pulse">V/S</div>
+              <span className="text-[7px] text-zinc-600 uppercase font-black tracking-widest mt-0.5">
+                ROUND {matchData.currentRound || 1}
+              </span>
+            </div>
 
-            <div className="flex items-center justify-center gap-2 mt-1.5 border-t border-zinc-900 pt-1.5 select-none">
-              <span className="text-[10px] uppercase font-bold text-zinc-500">Target Result:</span>
-              <span className="text-lg font-black font-mono text-cyan-400 filter drop-shadow-[0_0_4px_#06b6d4]">
+            <div className="flex flex-col items-end flex-1 min-w-0 text-right">
+              <span className="text-[8px] uppercase font-bold tracking-widest text-zinc-500 font-sans">Opponent</span>
+              <span className="text-xs font-black text-pink-400 truncate max-w-[120px] uppercase font-mono tracking-wider">
+                {currentUid === matchData.player1Id 
+                  ? (matchData.player2Name || (isBotMatch ? 'AI Bot' : 'Challenger')) 
+                  : matchData.player1Name}
+              </span>
+              <span className="text-[10px] font-black text-pink-400 font-mono mt-0.5">
+                {opponentScore} Solved
+              </span>
+            </div>
+          </div>
+
+          {/* 2-MIN GAME RUN TIME TIMER DISPLAY */}
+          <div className="mb-3.5 flex items-center gap-1.5 px-3 py-1 bg-black/60 border border-zinc-800 rounded-full text-[10px] font-black font-mono tracking-widest text-cyan-400 select-none">
+            <Timer className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>TIMER : {formatTimerValue(timeLeft)}</span>
+          </div>
+
+          {/* EQUATION WORKSPACE BOARD */}
+          <div className="w-full rounded-2xl border border-zinc-800/80 bg-zinc-950/80 p-4 mb-4 shadow-xl relative flex flex-col gap-3">
+            
+            {/* OPPONENT EQUATION BOX */}
+            <div className="flex flex-col gap-1.5 pb-2 border-b border-zinc-900">
+              <span className="text-[8px] uppercase font-black tracking-widest text-pink-400 font-mono">Opponent</span>
+              {renderFormulaBlocks(true)}
+            </div>
+
+            {/* SHARED TARGET RESULT TARGET */}
+            <div className="flex items-center justify-between px-2 select-none">
+              <span className="text-[8px] uppercase tracking-[0.2em] font-black text-zinc-500 font-sans">
+                Target Result:
+              </span>
+              <span className="text-xl font-black font-mono text-cyan-400 filter drop-shadow-[0_0_6px_#06b6d4]">
                 {matchData.target}
               </span>
             </div>
+
+            {/* YOUR EQUATION BOX */}
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
+              <span className="text-[8px] uppercase font-black tracking-widest text-cyan-400 font-mono">You</span>
+              {renderFormulaBlocks(false)}
+            </div>
+
           </div>
 
-          {/* Matrix Cells Grid */}
-          <div className="grid grid-cols-4 gap-1.5 w-full mb-2.5 p-1.5 bg-black/45 border border-zinc-900/60 rounded-xl select-none">
+          {/* 4x4 TILES MATRIX BOARD */}
+          <div className="grid grid-cols-4 gap-2.5 w-full mb-4 p-2.5 bg-black/65 border border-zinc-900/80 rounded-2xl select-none">
             {matchData.grid.map((val: number, idx: number) => {
               const isSelected = selectedIndices.includes(idx);
               return (
                 <button
                   key={idx}
                   onClick={() => handleCellClick(idx)}
-                  className={`aspect-square rounded-lg border font-mono font-black text-base flex items-center justify-center relative transition-all active:scale-90 ${
+                  className={`aspect-square rounded-xl border font-mono font-black text-lg flex items-center justify-center relative transition-all active:scale-90 ${
                     isSelected 
-                      ? 'border-blue-500 bg-zinc-850/80 text-white font-extrabold shadow-[0_0_12px_#3b82f6]' 
-                      : 'border-zinc-850 bg-black text-zinc-400 hover:border-zinc-700 hover:text-white'
+                      ? 'border-cyan-500 bg-cyan-950/20 text-cyan-400 font-extrabold shadow-[0_0_15px_#06b6d4]' 
+                      : 'border-zinc-850 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white'
                   }`}
                 >
                   {val}
 
                   {isSelected && (
-                    <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-zinc-700 border border-zinc-500 text-[8px] font-bold text-white flex items-center justify-center">
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-500 text-[9px] font-black text-black flex items-center justify-center">
                       {selectedIndices.indexOf(idx) + 1}
                     </span>
                   )}
@@ -1031,11 +1235,11 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             })}
           </div>
 
-          {/* Quit match action button */}
+          {/* ABORT DUEL BUTTON */}
           <div className="w-full shrink-0">
             <button
               onClick={handleAbortMatch}
-              className="w-full py-2.5 rounded-2xl border border-red-950/70 hover:border-red-500/50 bg-red-950/20 text-[10px] font-black uppercase text-red-400 hover:text-red-300 transition active:scale-95 flex items-center justify-center gap-1.5"
+              className="w-full py-3.5 rounded-2xl border border-red-950/70 hover:border-red-500/50 bg-red-950/10 text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-300 transition active:scale-95 flex items-center justify-center gap-1.5"
             >
               Abort Match Duel
             </button>
@@ -1044,14 +1248,14 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         </div>
       )}
 
-      {/* 6. GAME OVER MULTIPLAYER DUEL WINNER RESULTS SCREEN */}
+      {/* 6. GAME OVER SPEEDRUN RESULTS SCREEN */}
       {onlineSubMode === 'game_over' && matchData && (
-        <div className="flex-1 flex flex-col justify-center items-center py-4 w-full max-w-sm mx-auto">
+        <div className="flex-1 flex flex-col justify-center items-center py-4 w-full max-w-sm mx-auto select-none px-4">
           
           <div className={`w-full max-w-xs rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl relative border ${
             matchData.winnerId === currentUid 
               ? 'border-emerald-500/30 bg-zinc-950' 
-              : 'border-red-500/30 bg-zinc-950'
+              : matchData.winnerId === 'draw' ? 'border-amber-500/30 bg-zinc-950' : 'border-red-500/30 bg-zinc-950'
           }`}>
             
             {matchData.winnerId === currentUid ? (
@@ -1061,11 +1265,49 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                 </div>
 
                 <h3 className="text-xl font-black tracking-widest text-emerald-400 uppercase leading-none mb-1">
-                  YOU WON!
+                  VICTORY!
+                </h3>
+                
+                {matchData.abandonedByOpponent ? (
+                  <p className="text-[9px] text-amber-400 uppercase font-black tracking-widest mb-4">
+                    Opponent Abandonded Game!
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-4">
+                    Winner of the speedrun duel!
+                  </p>
+                )}
+
+                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Your Score:</span>
+                    <span className="text-emerald-400 font-bold">{myScore} Solved</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Challenger:</span>
+                    <span className="text-zinc-400">{opponentScore} Solved</span>
+                  </div>
+                </div>
+              </>
+            ) : matchData.winnerId === 'draw' ? (
+              <>
+                <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4">
+                  <Award className="w-10 h-10 animate-pulse" />
+                </div>
+
+                <h3 className="text-xl font-black tracking-widest text-amber-400 uppercase leading-none mb-1">
+                  TIED DUEL
                 </h3>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-6">
-                  You solved the matrix first
+                  It's an even match!
                 </p>
+
+                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Both Solved:</span>
+                    <span className="text-amber-400 font-bold">{myScore} Puzzles</span>
+                  </div>
+                </div>
               </>
             ) : (
               <>
@@ -1074,14 +1316,25 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                 </div>
 
                 <h3 className="text-xl font-black tracking-widest text-red-400 uppercase leading-none mb-1">
-                  YOU LOST!
+                  DEFEAT
                 </h3>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 truncate max-w-[180px]">
-                  Winner: {matchData.winnerName || 'Opponent'}
+                  Winner: {p2Name}
                 </p>
-                <p className="text-[8px] text-zinc-600 uppercase tracking-wider mb-6">
-                  They solved the board before you
+                <p className="text-[8px] text-zinc-600 uppercase tracking-wider mb-4">
+                  They solved more puzzles before time ran out
                 </p>
+
+                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Your Score:</span>
+                    <span className="text-zinc-400">{myScore} Solved</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Challenger:</span>
+                    <span className="text-pink-400 font-bold">{opponentScore} Solved</span>
+                  </div>
+                </div>
               </>
             )}
 
