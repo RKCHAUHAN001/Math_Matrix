@@ -231,6 +231,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
   // Mode state: 'normal' vs 'advance'
   const [playMode, setPlayMode] = useState<'normal' | 'advance'>('normal');
+  const [lobbyStep, setLobbyStep] = useState<'choose_mode' | 'choose_action'>('choose_mode');
 
   // Rematch-specific states
   const [isRematchRequestedByMe, setIsRematchRequestedByMe] = useState<boolean>(false);
@@ -583,6 +584,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setIsRematchRequestedByMe(false);
     setIsRematchRequestReceived(false);
     setRematchDeclinedMessage(null);
+    setLobbyStep('choose_mode');
     setOnlineSubMode('lobby');
   };
 
@@ -1289,7 +1291,14 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           {/* HEADER */}
           <div className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
             <button 
-              onClick={() => { sounds.playClick(); onClose(); }}
+              onClick={() => {
+                sounds.playClick();
+                if (lobbyStep === 'choose_action') {
+                  setLobbyStep('choose_mode');
+                } else {
+                  onClose();
+                }
+              }}
               className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
             >
               <ChevronLeft className="w-4 h-4 text-zinc-300" />
@@ -1300,7 +1309,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                 <Globe className="w-4 h-4 text-blue-400 animate-pulse" /> Play Online
               </h2>
               <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1">
-                Real-Time Competitive Duels
+                {lobbyStep === 'choose_mode' ? 'Select Game Mode' : `${playMode === 'advance' ? 'Advance' : 'Normal'} Mode Queue`}
               </p>
             </div>
 
@@ -1310,30 +1319,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-amber-400 hover:text-amber-300 active:scale-95 transition-all shadow-md shrink-0"
             >
               <ShieldAlert className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* CHOOSE PLAYMODE SELECTOR (NORMAL vs ADVANCE!) */}
-          <div className="flex p-1 bg-black/45 border border-zinc-900 rounded-xl mb-3 shrink-0">
-            <button
-              onClick={() => { sounds.playClick(); setPlayMode('normal'); }}
-              className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                playMode === 'normal' 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-zinc-500 hover:text-white'
-              }`}
-            >
-              🟢 Normal Mode
-            </button>
-            <button
-              onClick={() => { sounds.playClick(); setPlayMode('advance'); }}
-              className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                playMode === 'advance' 
-                  ? 'bg-purple-600 text-white shadow-md' 
-                  : 'text-zinc-500 hover:text-white'
-              }`}
-            >
-              🔵 Advance Mode
             </button>
           </div>
 
@@ -1349,82 +1334,133 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             </div>
           )}
 
-          {/* MAIN ACTIONS CARD */}
-          <div className="flex-1 flex flex-col justify-center gap-3 py-1 shrink-0">
-            
-            {/* Action 1: Random Matchmaking */}
-            <button
-              onClick={handleStartRandomMatchmaking}
-              className={`w-full p-4 rounded-2xl bg-gradient-to-br border hover:bg-opacity-15 group transition-all text-left relative overflow-hidden ${
-                playMode === 'advance' 
-                  ? 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-500/15'
-                  : 'from-blue-500/20 to-sky-500/10 border-blue-500/30 hover:border-blue-400/50 hover:bg-blue-500/15'
-              }`}
-            >
-              <div className={`absolute right-4 top-4 w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all ${
-                playMode === 'advance' ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'
-              }`}>
-                <Globe className="w-5 h-5 animate-spin-slow" />
-              </div>
-              <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-400' : 'text-blue-400'}`}>Random Duel</p>
-              <p className="text-[10px] text-white font-extrabold mt-0.5">Quick Matchmaker</p>
-              <p className="text-[8px] text-zinc-500 mt-1">
-                Instantly pair with an opponent on {playMode === 'advance' ? 'Advance Mode (operators)' : 'Normal Mode (numbers)'}.
+          {lobbyStep === 'choose_mode' ? (
+            /* STEP 1: CHOOSE PLAYMODE LANDING BUTTONS */
+            <div className="flex-1 flex flex-col justify-center gap-4 py-2 shrink-0 animate-fadeIn">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 text-center mb-1">
+                Choose Online Mode
               </p>
-            </button>
 
-            {/* Action 2: Create Custom Room */}
-            <button
-              onClick={handleCreatePrivateRoom}
-              className={`w-full p-4 rounded-2xl bg-gradient-to-br border hover:bg-opacity-15 group transition-all text-left relative overflow-hidden ${
-                playMode === 'advance'
-                  ? 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-500/15'
-                  : 'from-violet-500/20 to-indigo-500/10 border-violet-500/30 hover:border-violet-400/50 hover:bg-violet-500/15'
-              }`}
-            >
-              <div className={`absolute right-4 top-4 w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all ${
-                playMode === 'advance' ? 'bg-purple-500/10 text-purple-400' : 'bg-violet-500/10 text-violet-400'
-              }`}>
-                <Plus className="w-5 h-5" />
-              </div>
-              <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-400' : 'text-violet-400'}`}>Create Room</p>
-              <p className="text-[10px] text-white font-extrabold mt-0.5">Invite your friends</p>
-              <p className="text-[8px] text-zinc-500 mt-1">Generate a 4-letter room code for a {playMode.toUpperCase()} mode duel.</p>
-            </button>
+              {/* Normal Mode Button */}
+              <button
+                onClick={() => {
+                  sounds.playClick();
+                  setPlayMode('normal');
+                  setLobbyStep('choose_action');
+                }}
+                className="w-full p-5 rounded-2xl bg-gradient-to-br from-blue-500/15 to-sky-500/5 border border-blue-500/30 hover:border-blue-400/60 hover:bg-blue-500/20 group transition-all text-left relative overflow-hidden active:scale-[0.98] shadow-lg"
+              >
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-all">
+                  <Play className="w-4 h-4" />
+                </div>
+                <p className="text-sm font-black tracking-wider text-blue-400 uppercase">🟢 Normal Mode</p>
+                <p className="text-[10px] text-zinc-400 font-bold mt-1">Numbers Equation Puzzle</p>
+                <p className="text-[8px] text-zinc-500 mt-1 max-w-[210px]">The classic gameplay. Pick number cells to satisfy the target formula.</p>
+              </button>
 
-            {/* Action 3: Join Custom Room */}
-            <button
-              onClick={() => { sounds.playClick(); setJoinError(null); setOnlineSubMode('room_join'); }}
-              className="w-full p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/15 group transition-all text-left relative overflow-hidden"
-            >
-              <div className="absolute right-4 top-4 w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-all">
-                <Key className="w-5 h-5" />
-              </div>
-              <p className="text-xs font-black tracking-wider text-emerald-400 uppercase">Join Room</p>
-              <p className="text-[10px] text-white font-extrabold mt-0.5">Enter code</p>
-              <p className="text-[8px] text-zinc-500 mt-1">Enter code shared by a friend to jump straight into their board.</p>
-            </button>
-
-            {/* Action 4: Quick AI Duel Bot */}
-            <button
-              onClick={handleStartBotDuel}
-              className="w-full p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-all text-left flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                  playMode === 'advance' ? 'bg-purple-500/10 border border-purple-500/20 text-purple-400' : 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
+              {/* Advance Mode Button */}
+              <button
+                onClick={() => {
+                  sounds.playClick();
+                  setPlayMode('advance');
+                  setLobbyStep('choose_action');
+                }}
+                className="w-full p-5 rounded-2xl bg-gradient-to-br from-purple-500/15 to-indigo-500/5 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/20 group transition-all text-left relative overflow-hidden active:scale-[0.98] shadow-lg"
+              >
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-all">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <p className="text-sm font-black tracking-wider text-purple-400 uppercase">🔵 Advance Mode</p>
+                <p className="text-[10px] text-zinc-400 font-bold mt-1">PEMDAS Operator Puzzle</p>
+                <p className="text-[8px] text-zinc-500 mt-1 max-w-[210px]">Add operators to a preset numbers equation. Scales dynamically based on scores!</p>
+              </button>
+            </div>
+          ) : (
+            /* STEP 2: CHOOSE ACTION CARD */
+            <div className="flex-1 flex flex-col justify-center gap-3 py-1 shrink-0 animate-fadeIn">
+              
+              {/* Action 1: Random Matchmaking */}
+              <button
+                onClick={handleStartRandomMatchmaking}
+                className={`w-full p-4 rounded-2xl bg-gradient-to-br border hover:bg-opacity-15 group transition-all text-left relative overflow-hidden ${
+                  playMode === 'advance' 
+                    ? 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-500/15'
+                    : 'from-blue-500/20 to-sky-500/10 border-blue-500/30 hover:border-blue-400/50 hover:bg-blue-500/15'
+                }`}
+              >
+                <div className={`absolute right-4 top-4 w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all ${
+                  playMode === 'advance' ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'
                 }`}>
-                  <Bot className="w-4 h-4" />
+                  <Globe className="w-5 h-5 animate-spin-slow" />
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-zinc-300">Duel AI Matrix Bot</p>
-                  <p className="text-[8px] text-zinc-500">Practice real-time speed solving in {playMode.toUpperCase()} mode</p>
-                </div>
-              </div>
-              <Sparkles className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-all" />
-            </button>
+                <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-400' : 'text-blue-400'}`}>Random Duel</p>
+                <p className="text-[10px] text-white font-extrabold mt-0.5">Quick Matchmaker</p>
+                <p className="text-[8px] text-zinc-500 mt-1">
+                  Instantly pair with an opponent on {playMode === 'advance' ? 'Advance Mode (operators)' : 'Normal Mode (numbers)'}.
+                </p>
+              </button>
 
-          </div>
+              {/* Action 2: Create Custom Room */}
+              <button
+                onClick={handleCreatePrivateRoom}
+                className={`w-full p-4 rounded-2xl bg-gradient-to-br border hover:bg-opacity-15 group transition-all text-left relative overflow-hidden ${
+                  playMode === 'advance'
+                    ? 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-500/15'
+                    : 'from-violet-500/20 to-indigo-500/10 border-violet-500/30 hover:border-violet-400/50 hover:bg-violet-500/15'
+                }`}
+              >
+                <div className={`absolute right-4 top-4 w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all ${
+                  playMode === 'advance' ? 'bg-purple-500/10 text-purple-400' : 'bg-violet-500/10 text-violet-400'
+                }`}>
+                  <Plus className="w-5 h-5" />
+                </div>
+                <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-400' : 'text-violet-400'}`}>Create Room</p>
+                <p className="text-[10px] text-white font-extrabold mt-0.5">Invite your friends</p>
+                <p className="text-[8px] text-zinc-500 mt-1">Generate a 4-letter room code for a {playMode.toUpperCase()} mode duel.</p>
+              </button>
+
+              {/* Action 3: Join Custom Room */}
+              <button
+                onClick={() => { sounds.playClick(); setJoinError(null); setOnlineSubMode('room_join'); }}
+                className="w-full p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/15 group transition-all text-left relative overflow-hidden"
+              >
+                <div className="absolute right-4 top-4 w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-all">
+                  <Key className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-black tracking-wider text-emerald-400 uppercase">Join Room</p>
+                <p className="text-[10px] text-white font-extrabold mt-0.5">Enter code</p>
+                <p className="text-[8px] text-zinc-500 mt-1">Enter code shared by a friend to jump straight into their board.</p>
+              </button>
+
+              {/* Action 4: Quick AI Duel Bot */}
+              <button
+                onClick={handleStartBotDuel}
+                className="w-full p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-all text-left flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                    playMode === 'advance' ? 'bg-purple-500/10 border border-purple-500/20 text-purple-400' : 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
+                  }`}>
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-zinc-300">Duel AI Matrix Bot</p>
+                    <p className="text-[8px] text-zinc-500">Practice real-time speed solving in {playMode.toUpperCase()} mode</p>
+                  </div>
+                </div>
+                <Sparkles className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-all" />
+              </button>
+
+              {/* BACK BUTTON TO STEPS CHOOSE_MODE */}
+              <button
+                onClick={() => { sounds.playClick(); setLobbyStep('choose_mode'); }}
+                className="w-full py-2.5 rounded-xl text-[9px] uppercase tracking-widest text-zinc-500 hover:text-white transition-all font-black flex items-center justify-center gap-1 mt-1 active:scale-95"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Back to mode selector
+              </button>
+
+            </div>
+          )}
 
           <div className="text-center py-1 shrink-0">
             <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">
