@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
+import { AdMobSimulator } from './AdMobSimulator';
 
 interface AdvanceModeBoardProps {
   theme: any;
@@ -144,6 +145,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
   const [timeLeft, setTimeLeft] = useState<number>(30);
   const [lives, setLives] = useState<number>(3);
   const [muted, setMuted] = useState<boolean>(false);
+  const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
 
   // Active equation values
   const [puzzle, setPuzzle] = useState(() => generateSolvableEquationAny(3));
@@ -432,10 +434,17 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
             <div className="w-full space-y-2.5">
               <button
-                onClick={handleResetGame}
-                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95"
+                onClick={() => { sounds.playClick(); setIsAdPlaying(true); }}
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-amber-400/20"
               >
-                Try Again
+                📺 Watch Ad to Resume Game
+              </button>
+
+              <button
+                onClick={handleResetGame}
+                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-emerald-400/20"
+              >
+                Try Again (Restart)
               </button>
 
               <button
@@ -458,6 +467,28 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
           </p>
         </div>
       )}
+
+      {/* AdMob Rewarded Resume Ad Simulator */}
+      <AdMobSimulator 
+        isOpen={isAdPlaying}
+        adType="rewarded_advance_resume"
+        onAdCompleted={() => {
+          setIsAdPlaying(false);
+          setLives(3);
+          setGameOver(false);
+          setIsPlaying(true);
+          const numCount = getRequiredNumCount(score, 30);
+          const nextPuzzle = generateSolvableEquationAny(numCount);
+          setPuzzle(nextPuzzle);
+          setUserOperators(Array(numCount - 1).fill(null));
+          setActiveSlotIndex(0);
+          sounds.playSuccess();
+        }}
+        onAdCancelled={() => {
+          setIsAdPlaying(false);
+          sounds.playFailure();
+        }}
+      />
 
     </div>
   );

@@ -16,7 +16,8 @@ import {
   Globe,
   WifiOff,
   MapPin,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
 import { MathMatrixBoard } from './components/MathMatrixBoard';
@@ -27,6 +28,7 @@ import { OnlineLobby } from './components/OnlineLobby';
 import { ChallengeShare } from './components/ChallengeShare';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { AdMobSimulator } from './components/AdMobSimulator';
 import { THEMES } from './utils/themes';
 import sounds from './utils/audio';
 
@@ -39,7 +41,8 @@ function GameDashboard() {
     logout,
     updateProfileSocialLink,
     authError,
-    clearAuthError
+    clearAuthError,
+    localLeaderboard
   } = useFirebase();
 
   // Unified standard premium theme
@@ -59,6 +62,9 @@ function GameDashboard() {
   const [isOnlineMode, setIsOnlineMode] = useState<boolean>(false);
   const [gameActive, setGameActive] = useState<boolean>(false);
   const [gameOverScore, setGameOverScore] = useState<number | null>(null);
+  const [gameOverOffline, setGameOverOffline] = useState<{ score: number, difficulty: 'easy' | 'medium' | 'hard' | 'insane' } | null>(null);
+  const [initialScore, setInitialScore] = useState<number>(0);
+  const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
 
   // Profile customization states
   const [displayNameInput, setDisplayNameInput] = useState<string>('');
@@ -117,6 +123,7 @@ function GameDashboard() {
 
   const handleStartGame = (difficulty: 'easy' | 'medium' | 'hard' | 'insane') => {
     sounds.playClick();
+    setInitialScore(0); // Reset score to 0 on standard launch
     setSelectedDifficulty(difficulty);
     setSelectedLevelNumber(undefined); // Clear Level Mode
     setIsOnlineMode(false); // Play Offline
@@ -212,12 +219,14 @@ function GameDashboard() {
               theme={theme}
               levelNumber={selectedLevelNumber}
               isOnlineMode={isOnlineMode}
+              initialScore={initialScore}
               onExitLevelMode={() => {
                 setSelectedLevelNumber(undefined);
                 setGameActive(false);
                 setActiveOverlay('levels');
               }}
               onGameOver={(final) => {
+                setGameOverOffline({ score: final, difficulty: selectedDifficulty });
                 setGameOverScore(final);
                 setGameActive(false);
               }}
@@ -756,6 +765,94 @@ function GameDashboard() {
               Got it, Dismiss
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Dedicated Offline Game Over Stats Overlay */}
+      {gameOverOffline !== null && (
+        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none text-white animate-fadeIn`}>
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+
+          <div className="flex-1 flex flex-col justify-center items-center max-w-sm mx-auto w-full relative z-10">
+            <div className="w-full rounded-3xl border border-red-500/20 bg-zinc-950/95 p-6 text-center shadow-2xl flex flex-col items-center">
+              
+              <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 animate-shake">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+
+              <h3 className="text-xl font-black tracking-widest text-red-500 uppercase leading-none mb-1">
+                GAME OVER
+              </h3>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-6">
+                Difficulty: {gameOverOffline.difficulty.toUpperCase()} Mode
+              </p>
+
+              {/* CURRENT RUN SCORE */}
+              <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-5 text-center font-mono relative overflow-hidden">
+                <div className="text-[9px] uppercase tracking-wider text-zinc-500">Your Score This Run</div>
+                <div className="text-3xl font-black text-emerald-400 mt-1">{gameOverOffline.score} <span className="text-xs font-normal text-zinc-400 font-sans">pts</span></div>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="w-full space-y-2.5">
+                <button
+                  onClick={() => {
+                    sounds.playClick();
+                    setIsAdPlaying(true);
+                  }}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-amber-400/20"
+                >
+                  📺 Watch Ad to Resume Game
+                </button>
+
+                <button
+                  onClick={() => {
+                    sounds.playClick();
+                    setInitialScore(0);
+                    setGameOverOffline(null);
+                    setGameOverScore(null);
+                    setGameActive(true);
+                  }}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-emerald-400/20"
+                >
+                  Play Again (Restart)
+                </button>
+
+                <button
+                  onClick={() => {
+                    sounds.playClick();
+                    setGameOverOffline(null);
+                    setGameOverScore(null);
+                    setMenuView('main');
+                  }}
+                  className="w-full py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-[10px] uppercase font-black tracking-widest transition-all active:scale-95"
+                >
+                  Back to Main Menu
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <AdMobSimulator 
+            isOpen={isAdPlaying}
+            adType="rewarded_resume"
+            onAdCompleted={() => {
+              setIsAdPlaying(false);
+              if (gameOverOffline) {
+                setInitialScore(gameOverOffline.score);
+                setGameOverOffline(null);
+                setGameOverScore(null);
+                setGameActive(true);
+                sounds.playSuccess();
+              }
+            }}
+            onAdCancelled={() => {
+              setIsAdPlaying(false);
+              sounds.playFailure();
+            }}
+          />
+
         </div>
       )}
     </div>

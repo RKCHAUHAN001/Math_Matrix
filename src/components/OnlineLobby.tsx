@@ -45,6 +45,7 @@ import {
 import { db } from '../firebase';
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
+import { AdMobSimulator } from './AdMobSimulator';
 
 // Hard difficulty formulas for Normal Mode
 const HARD_FORMULAS = [
@@ -217,6 +218,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const { incrementTrophyDirectly } = useFirebase();
   const [onlineSubMode, setOnlineSubMode] = useState<'lobby' | 'matchmaking' | 'room_waiting' | 'room_join' | 'game_active' | 'game_over'>('lobby');
   const [roomCodeInput, setRoomCodeInput] = useState<string>('');
+  const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
+  const [pendingRematchData, setPendingRematchData] = useState<any>(null);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [matchData, setMatchData] = useState<any>(null);
   const [isCreator, setIsCreator] = useState<boolean>(false);
@@ -425,14 +428,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         // Rematch triggered -> transition back to active
         if (data.status === 'active' && onlineSubModeRef.current === 'game_over') {
           sounds.playSuccess();
-          lastRoundRef.current = 1;
-          setSelectedIndices([]);
-          setAdvanceSelections([]);
-          setTimeLeft(120);
-          setIsRematchRequestedByMe(false);
-          setIsRematchRequestReceived(false);
-          setRematchDeclinedMessage(null);
-          setOnlineSubMode('game_active');
+          setPendingRematchData(data);
+          setIsAdPlaying(true);
         }
 
         // Detect new round (currentRound advanced) -> clear local cells/operators selections
@@ -887,6 +884,30 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setTimeout(() => setRulesCopied(false), 3000);
   };
 
+  // REMATCH AD CALLBACKS
+  const handleAdCompleted = () => {
+    setIsAdPlaying(false);
+    if (pendingRematchData) {
+      setMatchData(pendingRematchData);
+      setPendingRematchData(null);
+    }
+    lastRoundRef.current = 1;
+    setSelectedIndices([]);
+    setAdvanceSelections([]);
+    setTimeLeft(120);
+    setIsRematchRequestedByMe(false);
+    setIsRematchRequestReceived(false);
+    setRematchDeclinedMessage(null);
+    setOnlineSubMode('game_active');
+    sounds.playSuccess();
+  };
+
+  const handleAdCancelled = () => {
+    setIsAdPlaying(false);
+    setPendingRematchData(null);
+    sounds.playFailure();
+  };
+
   // REQUEST REMATCH HANDLER
   const handleRequestRematch = async () => {
     sounds.playClick();
@@ -922,12 +943,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         resetBotMatch.formulaSize = puzzle.formulaSize;
       }
 
-      setMatchData(resetBotMatch);
-      setSelectedIndices([]);
-      setAdvanceSelections([]);
-      lastRoundRef.current = 1;
-      setTimeLeft(120);
-      setOnlineSubMode('game_active');
+      setPendingRematchData(resetBotMatch);
+      setIsAdPlaying(true);
       return;
     }
 
@@ -2029,6 +2046,14 @@ service cloud.firestore {
           </div>
         </div>
       )}
+
+      {/* AdMob Rematch Interstitial Ad Simulator */}
+      <AdMobSimulator 
+        isOpen={isAdPlaying}
+        adType="interstitial_rematch"
+        onAdCompleted={handleAdCompleted}
+        onAdCancelled={handleAdCancelled}
+      />
 
     </div>
   );

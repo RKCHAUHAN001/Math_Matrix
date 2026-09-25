@@ -8,6 +8,7 @@ import { RotateCcw, Volume2, VolumeX, Zap, CheckCircle2, ChevronRight, ChevronLe
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
 import { LEVELS, LevelConfig } from '../utils/levels';
+import { AdMobSimulator } from './AdMobSimulator';
 
 interface MathMatrixBoardProps {
   difficulty: 'easy' | 'medium' | 'hard' | 'insane';
@@ -16,6 +17,7 @@ interface MathMatrixBoardProps {
   levelNumber?: number; // Optional level number when playing in level mode
   onExitLevelMode?: () => void; // Return to the level selector map
   isOnlineMode?: boolean; // Optional online mode flag
+  initialScore?: number; // Optional initial score for ad-based reviving
 }
 
 interface FormulaTemplate {
@@ -101,7 +103,8 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   onGameOver,
   levelNumber: initialLevelNumber,
   onExitLevelMode,
-  isOnlineMode = false
+  isOnlineMode = false,
+  initialScore = 0
 }) => {
   const { submitScore, incrementStreakDirectly } = useFirebase();
 
@@ -138,6 +141,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   
   // Player Skips state: starts with 3 skips
   const [skipsLeft, setSkipsLeft] = useState<number>(3);
+  const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
 
   // Success / Failure overlays
   const [showLevelSuccessOverlay, setShowLevelSuccessOverlay] = useState<boolean>(false);
@@ -202,7 +206,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
     }
 
     sounds.playSuccess();
-    setScore(0);
+    setScore(initialScore);
     setCombo(0);
     setLives(3); // Reset lives back to 3
     setSkipsLeft(3); // Reset skips back to 3
@@ -210,9 +214,9 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
     setSelectedIndices([]);
     setIsPlaying(true);
     
-    // Note: generateBoardAndEquation needs score state to be 0
+    // Note: generateBoardAndEquation needs score state
     setTimeout(() => {
-      generateBoardAndEquation(0);
+      generateBoardAndEquation(initialScore);
     }, 0);
   };
 
@@ -284,13 +288,26 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
     if (!isPlaying || showLevelSuccessOverlay || showLevelFailureOverlay) return;
     
     if (skipsLeft <= 0) {
-      sounds.playFailure();
+      sounds.playClick();
+      setIsAdPlaying(true);
       return;
     }
 
     sounds.playClick();
     setSkipsLeft(prev => prev - 1);
     generateBoardAndEquation();
+  };
+
+  const handleAdCompleted = () => {
+    setIsAdPlaying(false);
+    setSkipsLeft(prev => prev + 1);
+    sounds.playSuccess();
+    generateBoardAndEquation();
+  };
+
+  const handleAdCancelled = () => {
+    setIsAdPlaying(false);
+    sounds.playFailure();
   };
 
   const handleCellClick = (index: number) => {
@@ -554,14 +571,13 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
         <div className="w-full flex gap-1.5 shrink-0">
           <button
             onClick={handleSkipMatrix}
-            disabled={skipsLeft <= 0}
             className={`flex-1 py-2.5 rounded-xl border ${theme.border} text-[9px] font-bold uppercase transition active:scale-95 flex items-center justify-center gap-1 ${
               skipsLeft <= 0 
-                ? 'opacity-50 text-red-500 border-red-950 bg-red-950/10 cursor-not-allowed' 
+                ? 'border-yellow-500/50 bg-yellow-950/10 text-yellow-500 hover:border-yellow-400 hover:bg-yellow-950/20' 
                 : 'text-zinc-500 hover:text-white hover:border-zinc-700'
             }`}
           >
-            <RotateCcw className="w-3 h-3" /> {skipsLeft > 0 ? `Skip Matrix (${skipsLeft} left)` : '0 Skips Left'}
+            <RotateCcw className="w-3 h-3" /> {skipsLeft > 0 ? `Skip Matrix (${skipsLeft} left)` : '📺 Watch Ad for Skip'}
           </button>
           <button
             onClick={handleEndGame}
@@ -651,6 +667,14 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
           </div>
         </div>
       )}
+
+      {/* AdMob Rewarded Ads Player Simulator */}
+      <AdMobSimulator 
+        isOpen={isAdPlaying}
+        adType="rewarded_skip"
+        onAdCompleted={handleAdCompleted}
+        onAdCancelled={handleAdCancelled}
+      />
 
     </div>
   );
