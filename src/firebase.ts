@@ -13,8 +13,26 @@ const firebaseConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID,
 };
 
+// Check if environment variables are configured. If not, use dummy configs
+// to prevent "No apiKey provided" runtime crashes so that local offline play is fully accessible.
+const hasValidConfig = typeof firebaseConfig.apiKey === 'string' && firebaseConfig.apiKey.trim() !== "";
+
+const activeConfig = hasValidConfig ? firebaseConfig : {
+  apiKey: "AIzaSyDummyKey_Please_Configure_Your_Env_Variables",
+  authDomain: "dummy-mathmatrix-game.firebaseapp.com",
+  projectId: "dummy-mathmatrix-game",
+  storageBucket: "dummy-mathmatrix-game.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef123456",
+  firestoreDatabaseId: undefined,
+};
+
+if (!hasValidConfig) {
+  console.warn("⚠️ Firebase Environment Variables are not configured yet! Running with local offline fallback. To enable global leaderboards and online matchmaking, configure your .env file.");
+}
+
 // Initialize Firebase safely
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(activeConfig);
 
 // Initialize Firestore & Auth
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
