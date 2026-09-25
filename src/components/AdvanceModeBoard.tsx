@@ -29,78 +29,114 @@ interface AdvanceModeBoardProps {
 // Operators allowed
 const OPERATORS = ['+', '-', '*', '/'];
 
-// Safe evaluation with standard mathematical precedence
-const evaluateAdvanceExpression = (a: number, b: number, c: number, op1: string, op2: string): number => {
-  // Multiplication & Division take precedence over Addition & Subtraction
-  const isOp1High = op1 === '*' || op1 === '/';
-  const isOp2High = op2 === '*' || op2 === '/';
+// Safe evaluation of any size expression following standard PEMDAS order of operations
+const evaluateAdvanceExpressionAny = (numbers: number[], operators: string[]): number => {
+  let nums = [...numbers];
+  let ops = [...operators];
 
-  if (isOp2High && !isOp1High) {
-    // Evaluate (b op2 c) first, then (a op1 result)
-    let subResult = 0;
-    if (op2 === '*') subResult = b * c;
-    if (op2 === '/') subResult = c !== 0 ? Math.floor(b / c) : b;
-
-    if (op1 === '+') return a + subResult;
-    if (op1 === '-') return a - subResult;
-  } else {
-    // Evaluate (a op1 b) first, then (result op2 c)
-    let firstResult = 0;
-    if (op1 === '+') firstResult = a + b;
-    if (op1 === '-') firstResult = a - b;
-    if (op1 === '*') firstResult = a * b;
-    if (op1 === '/') firstResult = b !== 0 ? Math.floor(a / b) : a;
-
-    if (op2 === '+') return firstResult + c;
-    if (op2 === '-') return firstResult - c;
-    if (op2 === '*') return firstResult * c;
-    if (op2 === '/') return c !== 0 ? Math.floor(firstResult / c) : firstResult;
+  // First pass: Multiplication and Division
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i] === '*' || ops[i] === '/') {
+      const a = nums[i];
+      const b = nums[i + 1];
+      let res = 0;
+      if (ops[i] === '*') res = a * b;
+      if (ops[i] === '/') res = b !== 0 ? Math.floor(a / b) : a;
+      
+      nums.splice(i, 2, res);
+      ops.splice(i, 1);
+    } else {
+      i++;
+    }
   }
 
-  return 0;
+  // Second pass: Addition and Subtraction
+  i = 0;
+  while (i < ops.length) {
+    if (ops[i] === '+' || ops[i] === '-') {
+      const a = nums[i];
+      const b = nums[i + 1];
+      let res = 0;
+      if (ops[i] === '+') res = a + b;
+      if (ops[i] === '-') res = a - b;
+      
+      nums.splice(i, 2, res);
+      ops.splice(i, 1);
+    } else {
+      i++;
+    }
+  }
+
+  return nums[0] || 0;
 };
 
-// Generate a valid, solvable equation for Advance Mode
-const generateSolvableEquation = () => {
+// Generate a valid, solvable equation for Advance Mode of any size
+const generateSolvableEquationAny = (numCount: number) => {
   let attempts = 0;
-  while (attempts < 100) {
+  while (attempts < 200) {
     attempts++;
-    const a = Math.floor(Math.random() * 12) + 2;
-    const b = Math.floor(Math.random() * 10) + 2;
-    const c = Math.floor(Math.random() * 8) + 1;
+    const numbers: number[] = [];
+    for (let i = 0; i < numCount; i++) {
+      if (i === 0) {
+        numbers.push(Math.floor(Math.random() * 12) + 2); // 2 to 13
+      } else {
+        numbers.push(Math.floor(Math.random() * 8) + 1); // 1 to 8
+      }
+    }
 
-    const op1 = OPERATORS[Math.floor(Math.random() * OPERATORS.length)];
-    const op2 = OPERATORS[Math.floor(Math.random() * OPERATORS.length)];
+    const operators: string[] = [];
+    for (let i = 0; i < numCount - 1; i++) {
+      operators.push(OPERATORS[Math.floor(Math.random() * OPERATORS.length)]);
+    }
 
-    // Ensure division results in whole integer and no negative numbers
-    if (op1 === '/' && a % b !== 0) continue;
-    
-    // Check nested division precedence
-    const isOp2High = op2 === '*' || op2 === '/';
-    if (op2 === '/' && b % c !== 0) continue;
-    if (op2 === '/' && !isOp2High && (a % b) !== 0) continue;
+    // Ensure division results in a clean integer at each step to avoid decimals and fractions
+    let hasFractionalDivision = false;
+    let tempNums = [...numbers];
+    let tempOps = [...operators];
 
-    const targetVal = evaluateAdvanceExpression(a, b, c, op1, op2);
+    let i = 0;
+    while (i < tempOps.length) {
+      if (tempOps[i] === '/') {
+        if (tempNums[i + 1] === 0 || tempNums[i] % tempNums[i + 1] !== 0) {
+          hasFractionalDivision = true;
+          break;
+        }
+        tempNums.splice(i, 2, Math.floor(tempNums[i] / tempNums[i + 1]));
+        tempOps.splice(i, 1);
+      } else if (tempOps[i] === '*') {
+        tempNums.splice(i, 2, tempNums[i] * tempNums[i + 1]);
+        tempOps.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
 
-    // Filter out extremely negative values or targets that are too big (>150)
+    if (hasFractionalDivision) continue;
+
+    const targetVal = evaluateAdvanceExpressionAny(numbers, operators);
+
+    // Filter out negative values or targets that are too big
     if (targetVal < 0 || targetVal > 150) continue;
 
     return {
-      a,
-      b,
-      c,
-      correctOp1: op1,
-      correctOp2: op2,
+      numbers,
+      correctOperators: operators,
       target: targetVal
     };
   }
 
-  // Fallback default
-  return { a: 5, b: 3, c: 2, correctOp1: '*', correctOp2: '+', target: 17 };
+  // Fallbacks
+  if (numCount === 4) {
+    return { numbers: [12, 4, 3, 1], correctOperators: ['/', '*', '-'], target: 8 };
+  } else if (numCount === 5) {
+    return { numbers: [8, 2, 5, 5, 8], correctOperators: ['/', '*', '+', '-'], target: 17 };
+  }
+  return { numbers: [5, 3, 2], correctOperators: ['*', '+'], target: 17 };
 };
 
 export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExit }) => {
-  const { submitScore, incrementStreakDirectly } = useFirebase();
+  const { submitScore } = useFirebase();
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [score, setScore] = useState<number>(0);
@@ -110,11 +146,10 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
   const [muted, setMuted] = useState<boolean>(false);
 
   // Active equation values
-  const [puzzle, setPuzzle] = useState(() => generateSolvableEquation());
-  const [userOp1, setUserOp1] = useState<string | null>(null);
-  const [userOp2, setUserOp2] = useState<string | null>(null);
-
-  const [activeSlot, setActiveSlot] = useState<1 | 2>(1);
+  const [puzzle, setPuzzle] = useState(() => generateSolvableEquationAny(3));
+  const [userOperators, setUserOperators] = useState<(string | null)[]>(() => Array(2).fill(null));
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number>(0);
+  
   const [gameOver, setGameOver] = useState<boolean>(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -146,6 +181,16 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     };
   }, [puzzle, isPlaying, gameOver]);
 
+  // Progressive difficulty logic: 3, 4, or 5 numbers based on current score or remaining time
+  const getRequiredNumCount = (currScore: number, currTime: number) => {
+    if (currScore >= 100 || currTime <= 10) {
+      return 5;
+    } else if (currScore >= 50 || currTime <= 20) {
+      return 4;
+    }
+    return 3;
+  };
+
   const handleTimeOut = () => {
     sounds.playFailure();
     setLives(prev => {
@@ -154,7 +199,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
         triggerGameOver();
       } else {
         // Generate next puzzle on timeout
-        nextRound(false);
+        nextRound(false, score, 30);
       }
       return nextLives;
     });
@@ -167,11 +212,12 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     submitScore(score, 'insane', 3); // Report highscore under insane/advanced difficulties category
   };
 
-  const nextRound = (isCorrect: boolean) => {
-    setUserOp1(null);
-    setUserOp2(null);
-    setActiveSlot(1);
-    setPuzzle(generateSolvableEquation());
+  const nextRound = (isCorrect: boolean, nextScore: number, nextTimeLeft: number) => {
+    const numCount = getRequiredNumCount(nextScore, nextTimeLeft);
+    const nextPuzzle = generateSolvableEquationAny(numCount);
+    setPuzzle(nextPuzzle);
+    setUserOperators(Array(numCount - 1).fill(null));
+    setActiveSlotIndex(0);
     if (isCorrect) {
       setCombo(prev => prev + 1);
     } else {
@@ -184,19 +230,25 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     if (gameOver) return;
     sounds.playClick();
 
-    if (activeSlot === 1) {
-      setUserOp1(op);
-      setActiveSlot(2);
+    const updatedOps = [...userOperators];
+    updatedOps[activeSlotIndex] = op;
+    setUserOperators(updatedOps);
+
+    // Look for any remaining empty slots
+    const nextEmptyIndex = updatedOps.findIndex(o => o === null);
+
+    if (nextEmptyIndex !== -1) {
+      setActiveSlotIndex(nextEmptyIndex);
     } else {
-      setUserOp2(op);
-      // Evaluate solution immediately when both are filled
-      const evaluated = evaluateAdvanceExpression(puzzle.a, puzzle.b, puzzle.c, userOp1 || op, op);
+      // Evaluate solution immediately when all slots are filled
+      const evaluated = evaluateAdvanceExpressionAny(puzzle.numbers, updatedOps as string[]);
 
       if (evaluated === puzzle.target) {
         sounds.playSuccess();
         const scoreGain = 10 + (combo * 2);
-        setScore(prev => prev + scoreGain);
-        nextRound(true);
+        const nextScore = score + scoreGain;
+        setScore(nextScore);
+        nextRound(true, nextScore, timeLeft);
       } else {
         sounds.playFailure();
         setLives(prev => {
@@ -205,9 +257,8 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
             triggerGameOver();
           } else {
             // Keep trying on the same puzzle but clear operator blanks
-            setUserOp1(null);
-            setUserOp2(null);
-            setActiveSlot(1);
+            setUserOperators(Array(puzzle.numbers.length - 1).fill(null));
+            setActiveSlotIndex(0);
           }
           return nextLives;
         });
@@ -223,11 +274,13 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     setLives(3);
     setGameOver(false);
     setIsPlaying(true);
-    setUserOp1(null);
-    setUserOp2(null);
-    setActiveSlot(1);
-    setPuzzle(generateSolvableEquation());
+    const nextPuzzle = generateSolvableEquationAny(3);
+    setPuzzle(nextPuzzle);
+    setUserOperators(Array(2).fill(null));
+    setActiveSlotIndex(0);
   };
+
+  const numCount = puzzle.numbers.length;
 
   return (
     <div className="w-full flex flex-col items-center select-none animate-fadeIn max-w-sm mx-auto px-4 justify-between h-full py-2">
@@ -246,7 +299,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
             Advance Mode
           </h2>
           <span className="text-[7px] text-zinc-500 uppercase tracking-widest mt-1 block">
-            Offline Arcade Speedrun
+            Offline Arcade Speedrun ({numCount} Numbers)
           </span>
         </div>
 
@@ -304,40 +357,25 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
             </div>
 
             {/* THE FORMULA WORKSPACE */}
-            <div className="flex items-center justify-center gap-2.5 font-mono text-xl py-6 select-none leading-none">
+            <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono text-xl py-6 select-none leading-none">
               
-              {/* Number A */}
-              <span className="font-black text-white">{puzzle.a}</span>
-
-              {/* Slot 1 Box */}
-              <button
-                onClick={() => { sounds.playClick(); setActiveSlot(1); }}
-                className={`w-10 h-10 rounded-xl border flex items-center justify-center text-base font-black transition-all ${
-                  activeSlot === 1 
-                    ? 'border-cyan-500 bg-cyan-950/20 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]' 
-                    : (userOp1 ? 'border-zinc-700 bg-zinc-900 text-white' : 'border-2 border-dashed border-zinc-800 text-zinc-700')
-                }`}
-              >
-                {userOp1 || '?'}
-              </button>
-
-              {/* Number B */}
-              <span className="font-black text-white">{puzzle.b}</span>
-
-              {/* Slot 2 Box */}
-              <button
-                onClick={() => { sounds.playClick(); setActiveSlot(2); }}
-                className={`w-10 h-10 rounded-xl border flex items-center justify-center text-base font-black transition-all ${
-                  activeSlot === 2 
-                    ? 'border-cyan-500 bg-cyan-950/20 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]' 
-                    : (userOp2 ? 'border-zinc-700 bg-zinc-900 text-white' : 'border-2 border-dashed border-zinc-800 text-zinc-700')
-                }`}
-              >
-                {userOp2 || '?'}
-              </button>
-
-              {/* Number C */}
-              <span className="font-black text-white">{puzzle.c}</span>
+              {puzzle.numbers.map((num, idx) => (
+                <React.Fragment key={idx}>
+                  <span className="font-black text-white">{num}</span>
+                  {idx < puzzle.numbers.length - 1 && (
+                    <button
+                      onClick={() => { sounds.playClick(); setActiveSlotIndex(idx); }}
+                      className={`w-10 h-10 rounded-xl border flex items-center justify-center text-base font-black transition-all ${
+                        activeSlotIndex === idx 
+                          ? 'border-cyan-500 bg-cyan-950/20 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]' 
+                          : (userOperators[idx] ? 'border-zinc-700 bg-zinc-900 text-white' : 'border-2 border-dashed border-zinc-800 text-zinc-700')
+                      }`}
+                    >
+                      {userOperators[idx] || '?'}
+                    </button>
+                  )}
+                </React.Fragment>
+              ))}
 
               {/* Equals */}
               <span className="text-zinc-600 font-sans">=</span>

@@ -61,7 +61,7 @@ service cloud.firestore {
           'player2Id', 'player2Name', 'player1Score', 'player2Score', 
           'player1Selection', 'player2Selection', 'currentRound', 'expiresAt', 
           'winnerId', 'winnerName', 'grid', 'target', 'formulaDisplay', 'formulaSize', 
-          'advanceA', 'advanceB', 'advanceC', 'rematchRequestedBy', 'rematchAccepted', 
+          'advanceA', 'advanceB', 'advanceC', 'advanceD', 'advanceE', 'rematchRequestedBy', 'rematchAccepted', 
           'rematchDeclined', 'createdAt', 'updatedAt'
         ])
         && data.matchId is string && data.matchId.size() <= 128
@@ -80,6 +80,8 @@ service cloud.firestore {
         && (!data.keys().contains('advanceA') || data.advanceA == null || data.advanceA is number)
         && (!data.keys().contains('advanceB') || data.advanceB == null || data.advanceB is number)
         && (!data.keys().contains('advanceC') || data.advanceC == null || data.advanceC is number)
+        && (!data.keys().contains('advanceD') || data.advanceD == null || data.advanceD is number)
+        && (!data.keys().contains('advanceE') || data.advanceE == null || data.advanceE is number)
         && (!data.keys().contains('rematchRequestedBy') || data.rematchRequestedBy == null || (data.rematchRequestedBy is string && data.rematchRequestedBy.size() <= 128))
         && (!data.keys().contains('rematchAccepted') || data.rematchAccepted == null || data.rematchAccepted is bool)
         && (!data.keys().contains('rematchDeclined') || data.rematchDeclined == null || data.rematchDeclined is bool)

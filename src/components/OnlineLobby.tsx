@@ -93,63 +93,117 @@ const generateNewPuzzle = () => {
   };
 };
 
-// Advance Mode expression evaluator
-const evaluateAdvanceExpression = (a: number, b: number, c: number, op1: string, op2: string): number => {
-  const isOp1High = op1 === '*' || op1 === '/';
-  const isOp2High = op2 === '*' || op2 === '/';
+// Safe evaluation of any size expression following standard PEMDAS order of operations
+const evaluateAdvanceExpressionAny = (numbers: number[], operators: string[]): number => {
+  let nums = [...numbers];
+  let ops = [...operators];
 
-  if (isOp2High && !isOp1High) {
-    let subResult = 0;
-    if (op2 === '*') subResult = b * c;
-    if (op2 === '/') subResult = c !== 0 ? Math.floor(b / c) : b;
-
-    if (op1 === '+') return a + subResult;
-    if (op1 === '-') return a - subResult;
-  } else {
-    let firstResult = 0;
-    if (op1 === '+') firstResult = a + b;
-    if (op1 === '-') firstResult = a - b;
-    if (op1 === '*') firstResult = a * b;
-    if (op1 === '/') firstResult = b !== 0 ? Math.floor(a / b) : a;
-
-    if (op2 === '+') return firstResult + c;
-    if (op2 === '-') return firstResult - c;
-    if (op2 === '*') return firstResult * c;
-    if (op2 === '/') return c !== 0 ? Math.floor(firstResult / c) : firstResult;
+  // First pass: Multiplication and Division
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i] === '*' || ops[i] === '/') {
+      const a = nums[i];
+      const b = nums[i + 1];
+      let res = 0;
+      if (ops[i] === '*') res = a * b;
+      if (ops[i] === '/') res = b !== 0 ? Math.floor(a / b) : a;
+      
+      nums.splice(i, 2, res);
+      ops.splice(i, 1);
+    } else {
+      i++;
+    }
   }
-  return 0;
+
+  // Second pass: Addition and Subtraction
+  i = 0;
+  while (i < ops.length) {
+    if (ops[i] === '+' || ops[i] === '-') {
+      const a = nums[i];
+      const b = nums[i + 1];
+      let res = 0;
+      if (ops[i] === '+') res = a + b;
+      if (ops[i] === '-') res = a - b;
+      
+      nums.splice(i, 2, res);
+      ops.splice(i, 1);
+    } else {
+      i++;
+    }
+  }
+
+  return nums[0] || 0;
 };
 
-// Advance Mode puzzle generator
-const generateNewAdvancePuzzle = () => {
+// Advance Mode puzzle generator of any size
+const generateNewAdvancePuzzle = (numCount: number) => {
   let attempts = 0;
-  while (attempts < 100) {
+  while (attempts < 200) {
     attempts++;
-    const a = Math.floor(Math.random() * 12) + 2;
-    const b = Math.floor(Math.random() * 10) + 2;
-    const c = Math.floor(Math.random() * 8) + 1;
+    const numbers: number[] = [];
+    for (let i = 0; i < numCount; i++) {
+      if (i === 0) {
+        numbers.push(Math.floor(Math.random() * 12) + 2);
+      } else {
+        numbers.push(Math.floor(Math.random() * 8) + 1);
+      }
+    }
 
-    const op1 = OPERATORS[Math.floor(Math.random() * OPERATORS.length)];
-    const op2 = OPERATORS[Math.floor(Math.random() * OPERATORS.length)];
+    const operators: string[] = [];
+    for (let i = 0; i < numCount - 1; i++) {
+      operators.push(OPERATORS[Math.floor(Math.random() * OPERATORS.length)]);
+    }
 
-    if (op1 === '/' && a % b !== 0) continue;
-    
-    const isOp2High = op2 === '*' || op2 === '/';
-    if (op2 === '/' && b % c !== 0) continue;
-    if (op2 === '/' && !isOp2High && (a % b) !== 0) continue;
+    let hasFractionalDivision = false;
+    let tempNums = [...numbers];
+    let tempOps = [...operators];
 
-    const targetVal = evaluateAdvanceExpression(a, b, c, op1, op2);
+    let i = 0;
+    while (i < tempOps.length) {
+      if (tempOps[i] === '/') {
+        if (tempNums[i + 1] === 0 || tempNums[i] % tempNums[i + 1] !== 0) {
+          hasFractionalDivision = true;
+          break;
+        }
+        tempNums.splice(i, 2, Math.floor(tempNums[i] / tempNums[i + 1]));
+        tempOps.splice(i, 1);
+      } else if (tempOps[i] === '*') {
+        tempNums.splice(i, 2, tempNums[i] * tempNums[i + 1]);
+        tempOps.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
+
+    if (hasFractionalDivision) continue;
+
+    const targetVal = evaluateAdvanceExpressionAny(numbers, operators);
 
     if (targetVal < 0 || targetVal > 150) continue;
 
     return {
-      a,
-      b,
-      c,
+      numbers,
       target: targetVal
     };
   }
-  return { a: 5, b: 3, c: 2, target: 17 };
+
+  if (numCount === 4) {
+    return { numbers: [12, 4, 3, 1], target: 8 };
+  } else if (numCount === 5) {
+    return { numbers: [8, 2, 5, 5, 8], target: 17 };
+  }
+  return { numbers: [5, 3, 2], target: 17 };
+};
+
+// Scale multiplayer puzzle size progressively based on scores and remaining time
+const getRequiredOnlineAdvanceNumCount = (score1: number, score2: number, tLeft: number) => {
+  const maxScore = Math.max(score1 || 0, score2 || 0);
+  if (maxScore >= 100 || tLeft <= 60) {
+    return 5;
+  } else if (maxScore >= 50 || tLeft <= 90) {
+    return 4;
+  }
+  return 3;
 };
 
 interface OnlineLobbyProps {
@@ -243,15 +297,18 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           let updatedMatch = {};
 
           if (matchData.playMode === 'advance') {
-            const nextPuzzle = generateNewAdvancePuzzle();
+            const nextCount = getRequiredOnlineAdvanceNumCount(matchData.player1Score || 0, currentBotScore + 1, timeLeft);
+            const nextPuzzle = generateNewAdvancePuzzle(nextCount);
             updatedMatch = {
               ...matchData,
               player2Score: currentBotScore + 1,
               player2Selection: [],
               player1Selection: [],
-              advanceA: nextPuzzle.a,
-              advanceB: nextPuzzle.b,
-              advanceC: nextPuzzle.c,
+              advanceA: nextPuzzle.numbers[0],
+              advanceB: nextPuzzle.numbers[1],
+              advanceC: nextPuzzle.numbers[2],
+              advanceD: nextCount >= 4 ? nextPuzzle.numbers[3] : null,
+              advanceE: nextCount >= 5 ? nextPuzzle.numbers[4] : null,
               target: nextPuzzle.target,
               currentRound: (matchData.currentRound || 1) + 1
             };
@@ -571,10 +628,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     };
 
     if (playMode === 'advance') {
-      const puzzle = generateNewAdvancePuzzle();
-      newMatchPayload.advanceA = puzzle.a;
-      newMatchPayload.advanceB = puzzle.b;
-      newMatchPayload.advanceC = puzzle.c;
+      const puzzle = generateNewAdvancePuzzle(3);
+      newMatchPayload.advanceA = puzzle.numbers[0];
+      newMatchPayload.advanceB = puzzle.numbers[1];
+      newMatchPayload.advanceC = puzzle.numbers[2];
+      newMatchPayload.advanceD = null;
+      newMatchPayload.advanceE = null;
       newMatchPayload.target = puzzle.target;
       newMatchPayload.grid = OPERATORS;
     } else {
@@ -665,10 +724,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     };
 
     if (playMode === 'advance') {
-      const puzzle = generateNewAdvancePuzzle();
-      botMatchData.advanceA = puzzle.a;
-      botMatchData.advanceB = puzzle.b;
-      botMatchData.advanceC = puzzle.c;
+      const puzzle = generateNewAdvancePuzzle(3);
+      botMatchData.advanceA = puzzle.numbers[0];
+      botMatchData.advanceB = puzzle.numbers[1];
+      botMatchData.advanceC = puzzle.numbers[2];
+      botMatchData.advanceD = null;
+      botMatchData.advanceE = null;
       botMatchData.target = puzzle.target;
       botMatchData.grid = OPERATORS;
     } else {
@@ -718,10 +779,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     };
 
     if (playMode === 'advance') {
-      const puzzle = generateNewAdvancePuzzle();
-      roomPayload.advanceA = puzzle.a;
-      roomPayload.advanceB = puzzle.b;
-      roomPayload.advanceC = puzzle.c;
+      const puzzle = generateNewAdvancePuzzle(3);
+      roomPayload.advanceA = puzzle.numbers[0];
+      roomPayload.advanceB = puzzle.numbers[1];
+      roomPayload.advanceC = puzzle.numbers[2];
+      roomPayload.advanceD = null;
+      roomPayload.advanceE = null;
       roomPayload.target = puzzle.target;
       roomPayload.grid = OPERATORS;
     } else {
@@ -841,10 +904,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       };
 
       if (matchData.playMode === 'advance') {
-        const puzzle = generateNewAdvancePuzzle();
-        resetBotMatch.advanceA = puzzle.a;
-        resetBotMatch.advanceB = puzzle.b;
-        resetBotMatch.advanceC = puzzle.c;
+        const puzzle = generateNewAdvancePuzzle(3);
+        resetBotMatch.advanceA = puzzle.numbers[0];
+        resetBotMatch.advanceB = puzzle.numbers[1];
+        resetBotMatch.advanceC = puzzle.numbers[2];
+        resetBotMatch.advanceD = null;
+        resetBotMatch.advanceE = null;
         resetBotMatch.target = puzzle.target;
         resetBotMatch.grid = OPERATORS;
       } else {
@@ -897,10 +962,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     };
 
     if (matchData.playMode === 'advance') {
-      const puzzle = generateNewAdvancePuzzle();
-      updates.advanceA = puzzle.a;
-      updates.advanceB = puzzle.b;
-      updates.advanceC = puzzle.c;
+      const puzzle = generateNewAdvancePuzzle(3);
+      updates.advanceA = puzzle.numbers[0];
+      updates.advanceB = puzzle.numbers[1];
+      updates.advanceC = puzzle.numbers[2];
+      updates.advanceD = null;
+      updates.advanceE = null;
       updates.target = puzzle.target;
       updates.grid = OPERATORS;
     } else {
@@ -943,8 +1010,10 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
     if (matchData.playMode === 'advance') {
       // ADVANCE MODE REAL-TIME MULTIPLAYER SOLVER CLICK
+      const activeNumCount = (matchData.advanceE !== undefined && matchData.advanceE !== null) ? 5 : ((matchData.advanceD !== undefined && matchData.advanceD !== null) ? 4 : 3);
+      const reqOpsCount = activeNumCount - 1;
       const opToUse = optOperator || OPERATORS[idx];
-      let newOps = [...advanceSelections, opToUse].slice(0, 2);
+      let newOps = [...advanceSelections, opToUse].slice(0, reqOpsCount);
       
       // 1. Instantly update client UI
       setAdvanceSelections(newOps);
@@ -961,49 +1030,56 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         } catch (e) {}
       }
 
-      // 3. Evaluate solution once both operators are specified
-      if (newOps.length === 2) {
-        const resultCheck = evaluateAdvanceExpression(
-          matchData.advanceA, 
-          matchData.advanceB, 
-          matchData.advanceC, 
-          newOps[0], 
-          newOps[1]
-        );
+      // 3. Evaluate solution once all operators are specified
+      if (newOps.length === reqOpsCount) {
+        const currentNums = [
+          matchData.advanceA,
+          matchData.advanceB,
+          matchData.advanceC
+        ];
+        if (activeNumCount >= 4) currentNums.push(matchData.advanceD);
+        if (activeNumCount >= 5) currentNums.push(matchData.advanceE);
+
+        const resultCheck = evaluateAdvanceExpressionAny(currentNums, newOps);
 
         if (resultCheck === matchData.target) {
           sounds.playSuccess();
           setAdvanceSelections([]);
 
-          const nextPuzzle = generateNewAdvancePuzzle();
+          const isP1 = currentUid === matchData.player1Id;
+          const p1Score = isP1 ? (matchData.player1Score || 0) + 1 : (matchData.player1Score || 0);
+          const p2Score = !isP1 ? (matchData.player2Score || 0) + 1 : (matchData.player2Score || 0);
+          const nextCount = getRequiredOnlineAdvanceNumCount(p1Score, p2Score, timeLeft);
+          const nextPuzzle = generateNewAdvancePuzzle(nextCount);
 
           if (isBotMatch) {
-            const currentScore = matchData.player1Score || 0;
             setMatchData((prev: any) => ({
               ...prev,
-              player1Score: currentScore + 1,
+              player1Score: p1Score,
               player1Selection: [],
               player2Selection: [],
-              advanceA: nextPuzzle.a,
-              advanceB: nextPuzzle.b,
-              advanceC: nextPuzzle.c,
+              advanceA: nextPuzzle.numbers[0],
+              advanceB: nextPuzzle.numbers[1],
+              advanceC: nextPuzzle.numbers[2],
+              advanceD: nextCount >= 4 ? nextPuzzle.numbers[3] : null,
+              advanceE: nextCount >= 5 ? nextPuzzle.numbers[4] : null,
               target: nextPuzzle.target,
               currentRound: (prev.currentRound || 1) + 1
             }));
           } else {
             try {
               const matchRef = doc(db, 'matches', activeMatchId!);
-              const isP1 = currentUid === matchData.player1Id;
-              const updatedScore = isP1 ? (matchData.player1Score || 0) + 1 : (matchData.player2Score || 0) + 1;
 
               await updateDoc(matchRef, {
-                player1Score: isP1 ? updatedScore : (matchData.player1Score || 0),
-                player2Score: !isP1 ? updatedScore : (matchData.player2Score || 0),
+                player1Score: p1Score,
+                player2Score: p2Score,
                 player1Selection: [],
                 player2Selection: [],
-                advanceA: nextPuzzle.a,
-                advanceB: nextPuzzle.b,
-                advanceC: nextPuzzle.c,
+                advanceA: nextPuzzle.numbers[0],
+                advanceB: nextPuzzle.numbers[1],
+                advanceC: nextPuzzle.numbers[2],
+                advanceD: nextCount >= 4 ? nextPuzzle.numbers[3] : null,
+                advanceE: nextCount >= 5 ? nextPuzzle.numbers[4] : null,
                 target: nextPuzzle.target,
                 currentRound: (matchData.currentRound || 1) + 1,
                 updatedAt: serverTimestamp()
@@ -1135,28 +1211,28 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
     if (matchData.playMode === 'advance') {
       // ADVANCE RENDERING LAYOUT
-      const sel1 = selections[0] !== undefined ? selections[0] : null;
-      const sel2 = selections[1] !== undefined ? selections[1] : null;
+      const activeNumCount = (matchData.advanceE !== undefined && matchData.advanceE !== null) ? 5 : ((matchData.advanceD !== undefined && matchData.advanceD !== null) ? 4 : 3);
+      const activeNums = [matchData.advanceA, matchData.advanceB, matchData.advanceC];
+      if (activeNumCount >= 4) activeNums.push(matchData.advanceD);
+      if (activeNumCount >= 5) activeNums.push(matchData.advanceE);
 
       return (
-        <div className="flex items-center justify-center gap-2.5 font-mono text-white text-base py-1 leading-none select-none">
-          <span className="font-extrabold">{matchData.advanceA}</span>
-          
-          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-black transition-all ${
-            sel1 ? (isOpponent ? 'border-pink-500/50 bg-pink-950/20 text-pink-400' : 'border-cyan-500/50 bg-cyan-950/20 text-cyan-400') : 'border-2 border-dashed border-zinc-800 text-zinc-700 animate-pulse bg-zinc-950/20'
-          }`}>
-            {sel1 || '?'}
-          </div>
-
-          <span className="font-extrabold">{matchData.advanceB}</span>
-
-          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-black transition-all ${
-            sel2 ? (isOpponent ? 'border-pink-500/50 bg-pink-950/20 text-pink-400' : 'border-cyan-500/50 bg-cyan-950/20 text-cyan-400') : 'border-2 border-dashed border-zinc-800 text-zinc-700 animate-pulse bg-zinc-950/20'
-          }`}>
-            {sel2 || '?'}
-          </div>
-
-          <span className="font-extrabold">{matchData.advanceC}</span>
+        <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono text-white text-base py-1 leading-none select-none">
+          {activeNums.map((num, idx) => {
+            const sel = selections[idx] !== undefined ? selections[idx] : null;
+            return (
+              <React.Fragment key={idx}>
+                <span className="font-extrabold">{num}</span>
+                {idx < activeNums.length - 1 && (
+                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-black transition-all ${
+                    sel ? (isOpponent ? 'border-pink-500/50 bg-pink-950/20 text-pink-400' : 'border-cyan-500/50 bg-cyan-950/20 text-cyan-400') : 'border-2 border-dashed border-zinc-800 text-zinc-700 animate-pulse bg-zinc-950/20'
+                  }`}>
+                    {sel || '?'}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       );
     } else {

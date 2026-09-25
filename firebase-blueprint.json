@@ -63,6 +63,8 @@
         "advanceA": { "type": "number" },
         "advanceB": { "type": "number" },
         "advanceC": { "type": "number" },
+        "advanceD": { "type": "number" },
+        "advanceE": { "type": "number" },
         "rematchRequestedBy": { "type": "string" },
         "rematchAccepted": { "type": "boolean" },
         "rematchDeclined": { "type": "boolean" },
