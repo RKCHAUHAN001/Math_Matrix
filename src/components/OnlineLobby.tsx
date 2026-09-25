@@ -1123,7 +1123,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
             <ol className="text-[9px] text-zinc-300 space-y-1 mb-3 list-decimal list-inside font-medium">
               <li>Open <span className="text-blue-400 font-mono">console.firebase.google.com</span></li>
-              <li>Select your <span className="text-amber-300 font-mono">math-matrix-73b64</span> project</li>
+              <li>Select your Firebase project</li>
               <li>Go to <span className="text-white font-bold">Build &rarr; Firestore Database &rarr; Rules</span></li>
               <li>Paste the rules below and click <span className="text-emerald-400 font-bold">Publish</span></li>
             </ol>
