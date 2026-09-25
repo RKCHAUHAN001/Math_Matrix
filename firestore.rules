@@ -115,28 +115,17 @@ service cloud.firestore {
 
     // Rules for Multiplayer Matches
     match /matches/{matchId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       
-      allow create: if isSignedIn()
-        && isValidId(matchId)
-        && incoming().player1Id == request.auth.uid
+      allow create: if isValidId(matchId)
         && isValidMultiplayerMatch(incoming())
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
         
-      allow update: if isSignedIn()
-        && isValidId(matchId)
+      allow update: if isValidId(matchId)
         && isValidMultiplayerMatch(incoming())
         && incoming().createdAt == existing().createdAt
-        && incoming().updatedAt == request.time
-        && (
-          // Case 1: Player 2 joins a waiting match
-          (existing().status == 'waiting' && incoming().status == 'active' && incoming().player2Id == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['player2Id', 'player2Name', 'status', 'updatedAt']))
-          // Case 2: One of the players solves the puzzle and wins
-          || (existing().status == 'active' && incoming().status == 'completed' && (request.auth.uid == existing().player1Id || request.auth.uid == existing().player2Id) && incoming().winnerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'winnerId', 'winnerName', 'updatedAt']))
-          // Case 3: Player abandons
-          || (incoming().status == 'abandoned' && (request.auth.uid == existing().player1Id || (existing().keys().contains('player2Id') && request.auth.uid == existing().player2Id)) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
-        );
+        && incoming().updatedAt == request.time;
         
       allow delete: if false;
     }

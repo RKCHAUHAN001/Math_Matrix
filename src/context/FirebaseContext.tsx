@@ -157,13 +157,23 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Handle user authentication and profile synchronization
   useEffect(() => {
+    let isCancelled = false;
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (isCancelled) return;
       try {
-        setUser(currentUser);
         if (currentUser) {
+          setUser(currentUser);
           await loadAndSyncProfile(currentUser);
         } else {
-          loadGuestProfile();
+          // If not signed in with Google, initialize anonymous session for seamless real-time multiplayer
+          try {
+            const { signInAnonymously } = await import('firebase/auth');
+            await signInAnonymously(auth);
+          } catch (anonErr) {
+            console.warn("Anonymous auth unavailable, defaulting to local guest profile:", anonErr);
+            loadGuestProfile();
+          }
         }
       } catch (e) {
         console.error("Auth status sync error:", e);
@@ -173,7 +183,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isCancelled = true;
+      unsubscribe();
+    };
   }, [isOnline]);
 
   // Sync when coming back online

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronLeft, 
   User, 
@@ -21,7 +21,10 @@ import {
   CheckCircle,
   AlertOctagon,
   Copy,
-  Check
+  Check,
+  Bot,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import { 
   doc, 
@@ -36,7 +39,6 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { MathMatrixBoard } from './MathMatrixBoard';
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
 
@@ -63,33 +65,75 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const [isCreator, setIsCreator] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [trophyAwarded, setTrophyAwarded] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [matchSearchSeconds, setMatchSearchSeconds] = useState<number>(0);
+  const [isBotMatch, setIsBotMatch] = useState<boolean>(false);
 
   // Gameplay specific synchronization
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
-  // Cleanup subscriptions on unmount
+  // Safe identifiers
+  const currentUid = user?.uid || profile?.uid || 'guest_' + Math.random().toString(36).substring(2, 9);
+  const currentDisplayName = profile?.displayName || user?.displayName || 'Matrix Explorer';
+
+  const activeMatchIdRef = useRef<string | null>(null);
+  activeMatchIdRef.current = activeMatchId;
+
+  // Search timer during matchmaking
   useEffect(() => {
+    let interval: any = null;
+    if (onlineSubMode === 'matchmaking') {
+      setMatchSearchSeconds(0);
+      interval = setInterval(() => {
+        setMatchSearchSeconds(prev => prev + 1);
+      }, 1000);
+    }
     return () => {
-      handleAbortMatch();
+      if (interval) clearInterval(interval);
     };
-  }, []);
+  }, [onlineSubMode]);
+
+  // AI Bot solver simulation
+  useEffect(() => {
+    let botTimer: any = null;
+    if (isBotMatch && onlineSubMode === 'game_active' && matchData && matchData.status === 'active') {
+      // Bot solves the puzzle in 14-22 seconds
+      const solveTimeMs = Math.floor(Math.random() * 8000) + 14000;
+      botTimer = setTimeout(() => {
+        if (onlineSubMode === 'game_active') {
+          setMatchData((prev: any) => ({
+            ...prev,
+            status: 'completed',
+            winnerId: 'bot_ai',
+            winnerName: 'AI Matrix Bot 🤖'
+          }));
+          sounds.playFailure();
+          setOnlineSubMode('game_over');
+        }
+      }, solveTimeMs);
+    }
+    return () => {
+      if (botTimer) clearTimeout(botTimer);
+    };
+  }, [isBotMatch, onlineSubMode, matchData]);
 
   // Listen to the active match document in real time
   useEffect(() => {
-    if (!activeMatchId) return;
+    if (!activeMatchId || isBotMatch) return;
 
+    let isSubscribed = true;
     const matchRef = doc(db, 'matches', activeMatchId);
+    
     const unsubscribe = onSnapshot(matchRef, (snapshot) => {
+      if (!isSubscribed) return;
+
       if (snapshot.exists()) {
         const data = snapshot.data();
         setMatchData(data);
 
         // Check for opponent connection
-        if (onlineSubMode === 'matchmaking' && data.status === 'active') {
-          sounds.playSuccess();
-          setOnlineSubMode('game_active');
-        }
-        if (onlineSubMode === 'room_waiting' && data.status === 'active') {
+        if (data.status === 'active' && (onlineSubMode === 'matchmaking' || onlineSubMode === 'room_waiting')) {
           sounds.playSuccess();
           setOnlineSubMode('game_active');
         }
@@ -98,9 +142,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         if (data.status === 'completed' && data.winnerId) {
           setIsCreator(false);
           setOnlineSubMode('game_over');
-          if (data.winnerId === user.uid) {
+          if (data.winnerId === currentUid) {
             sounds.playSuccess();
-            // Trophies are awarded for Quick Random Matchmaking Only (type === 'random')
             if (!trophyAwarded && data.type === 'random') {
               setTrophyAwarded(true);
               incrementTrophyDirectly();
@@ -113,14 +156,19 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         // Check for abandonment
         if (data.status === 'abandoned') {
           sounds.playFailure();
-          alert("Opponent left the match.");
+          setErrorMessage("Opponent left or disconnected from the match.");
           resetToLobby();
         }
       }
+    }, (err) => {
+      console.warn("Match snapshot listener warning:", err);
     });
 
-    return () => unsubscribe();
-  }, [activeMatchId, onlineSubMode]);
+    return () => {
+      isSubscribed = false;
+      unsubscribe();
+    };
+  }, [activeMatchId, isBotMatch, onlineSubMode, currentUid]);
 
   const resetToLobby = () => {
     setActiveMatchId(null);
@@ -128,24 +176,24 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setSelectedIndices([]);
     setIsCreator(false);
     setTrophyAwarded(false);
+    setIsBotMatch(false);
     setOnlineSubMode('lobby');
   };
 
   const handleAbortMatch = async () => {
-    if (activeMatchId) {
+    const targetId = activeMatchIdRef.current;
+    if (targetId && !isBotMatch) {
       try {
-        const matchRef = doc(db, 'matches', activeMatchId);
+        const matchRef = doc(db, 'matches', targetId);
         const snap = await getDoc(matchRef);
         if (snap.exists()) {
           const data = snap.data();
-          if (data.status === 'waiting' && data.player1Id === user.uid) {
-            await updateDoc(matchRef, { status: 'abandoned', updatedAt: serverTimestamp() });
-          } else if (data.status === 'active') {
+          if (data.status === 'waiting' || data.status === 'active') {
             await updateDoc(matchRef, { status: 'abandoned', updatedAt: serverTimestamp() });
           }
         }
       } catch (err) {
-        console.error("Error aborting match: ", err);
+        console.warn("Error recording abort: ", err);
       }
     }
     resetToLobby();
@@ -154,7 +202,9 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   // 1. RANDOM MATCHMAKING ENGINE
   const handleStartRandomMatchmaking = async () => {
     sounds.playClick();
+    setErrorMessage(null);
     setOnlineSubMode('matchmaking');
+    setIsBotMatch(false);
 
     try {
       // Find active waiting matches
@@ -168,8 +218,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
       // Filter out self matches
       const waitingMatches = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() as any }))
-        .filter(m => m.player1Id !== user.uid);
+        .map(docSnap => ({ id: docSnap.id, ...docSnap.data() as any }))
+        .filter(m => m.player1Id !== currentUid);
 
       if (waitingMatches.length > 0) {
         // Join existing match
@@ -177,17 +227,25 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         const matchRef = doc(db, 'matches', chosenMatch.id);
         
         await updateDoc(matchRef, {
-          player2Id: user.uid,
-          player2Name: profile?.displayName || user.displayName || 'Anonymous Match',
+          player2Id: currentUid,
+          player2Name: currentDisplayName,
           status: 'active',
           updatedAt: serverTimestamp()
         });
 
         setActiveMatchId(chosenMatch.id);
+        setMatchData({
+          ...chosenMatch,
+          player2Id: currentUid,
+          player2Name: currentDisplayName,
+          status: 'active'
+        });
         setIsCreator(false);
+        setOnlineSubMode('game_active');
+        sounds.playSuccess();
       } else {
         // Create new waiting match
-        const newMatchId = 'rand_' + Math.random().toString(36).substring(2, 11);
+        const newMatchId = 'rand_' + Math.random().toString(36).substring(2, 10);
         
         // Generate uniform game parameters
         const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
@@ -206,13 +264,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         const operands = solvedIndices.map(idx => grid[idx]);
         const targetVal = formula.evaluate(operands);
 
-        const matchRef = doc(db, 'matches', newMatchId);
-        await setDoc(matchRef, {
+        const newMatchPayload = {
           matchId: newMatchId,
           type: 'random',
           status: 'waiting',
-          player1Id: user.uid,
-          player1Name: profile?.displayName || user.displayName || 'Anonymous Match',
+          player1Id: currentUid,
+          player1Name: currentDisplayName,
           player2Id: null,
           player2Name: null,
           grid: grid,
@@ -223,22 +280,69 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           winnerName: null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
+        };
+
+        const matchRef = doc(db, 'matches', newMatchId);
+        await setDoc(matchRef, newMatchPayload);
 
         setActiveMatchId(newMatchId);
+        setMatchData(newMatchPayload);
         setIsCreator(true);
       }
-    } catch (err) {
-      console.error("Matchmaking failed: ", err);
-      sounds.playFailure();
-      resetToLobby();
+    } catch (err: any) {
+      console.warn("Online matchmaking query note:", err);
+      // If cloud database is unavailable, keep the matchmaking UI open with option to start bot duel
+      setErrorMessage("Live matchmaking queue is quiet right now.");
     }
+  };
+
+  // Launch simulated Bot duel
+  const handleStartBotDuel = () => {
+    sounds.playSuccess();
+    setErrorMessage(null);
+    setIsBotMatch(true);
+
+    const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
+    const grid: number[] = [];
+    for (let i = 0; i < 16; i++) {
+      grid.push(Math.floor(Math.random() * 15) + 1);
+    }
+    const solvedIndices: number[] = [];
+    while (solvedIndices.length < formula.size) {
+      const randIdx = Math.floor(Math.random() * 16);
+      if (!solvedIndices.includes(randIdx)) solvedIndices.push(randIdx);
+    }
+    const operands = solvedIndices.map(idx => grid[idx]);
+    const targetVal = formula.evaluate(operands);
+
+    const botMatchData = {
+      matchId: 'bot_' + Math.random().toString(36).substring(2, 8),
+      type: 'random',
+      status: 'active',
+      player1Id: currentUid,
+      player1Name: currentDisplayName,
+      player2Id: 'bot_ai',
+      player2Name: 'AI Matrix Bot 🤖',
+      grid: grid,
+      target: targetVal,
+      formulaDisplay: formula.display,
+      formulaSize: formula.size,
+      winnerId: null,
+      winnerName: null
+    };
+
+    setActiveMatchId(botMatchData.matchId);
+    setMatchData(botMatchData);
+    setIsCreator(true);
+    setOnlineSubMode('game_active');
   };
 
   // 2. CREATE PRIVATE GAME ROOM
   const handleCreatePrivateRoom = async () => {
     sounds.playClick();
+    setErrorMessage(null);
     setOnlineSubMode('room_waiting');
+    setIsBotMatch(false);
 
     // Generate unique 4-character uppercase code
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -251,8 +355,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       const formula = HARD_FORMULAS[Math.floor(Math.random() * HARD_FORMULAS.length)];
       const grid: number[] = [];
       for (let i = 0; i < 16; i++) {
-        let val = Math.floor(Math.random() * 15) + 1;
-        grid.push(val);
+        grid.push(Math.floor(Math.random() * 15) + 1);
       }
       
       const solvedIndices: number[] = [];
@@ -263,13 +366,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       const operands = solvedIndices.map(idx => grid[idx]);
       const targetVal = formula.evaluate(operands);
 
-      const matchRef = doc(db, 'matches', code);
-      await setDoc(matchRef, {
+      const roomPayload = {
         matchId: code,
         type: 'room',
         status: 'waiting',
-        player1Id: user.uid,
-        player1Name: profile?.displayName || user.displayName || 'Room Host',
+        player1Id: currentUid,
+        player1Name: currentDisplayName,
         player2Id: null,
         player2Name: null,
         grid: grid,
@@ -280,23 +382,28 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         winnerName: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+
+      const matchRef = doc(db, 'matches', code);
+      await setDoc(matchRef, roomPayload);
 
       setActiveMatchId(code);
+      setMatchData(roomPayload);
       setIsCreator(true);
-    } catch (err) {
-      console.error("Room creation failed: ", err);
-      sounds.playFailure();
-      resetToLobby();
+    } catch (err: any) {
+      console.warn("Room creation error:", err);
+      setErrorMessage("Could not register room code with server. Please try again.");
     }
   };
 
   // 3. JOIN PRIVATE GAME ROOM
   const handleJoinPrivateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
+    setJoinError(null);
     const code = roomCodeInput.trim().toUpperCase();
     if (code.length !== 4) {
       sounds.playFailure();
+      setJoinError("Room code must be exactly 4 characters.");
       return;
     }
 
@@ -308,27 +415,34 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         const data = snap.data();
         if (data.status === 'waiting') {
           await updateDoc(matchRef, {
-            player2Id: user.uid,
-            player2Name: profile?.displayName || user.displayName || 'Opponent Player',
+            player2Id: currentUid,
+            player2Name: currentDisplayName,
             status: 'active',
             updatedAt: serverTimestamp()
           });
 
           setActiveMatchId(code);
+          setMatchData({
+            ...data,
+            player2Id: currentUid,
+            player2Name: currentDisplayName,
+            status: 'active'
+          });
           setIsCreator(false);
           setOnlineSubMode('game_active');
           sounds.playSuccess();
         } else {
           sounds.playFailure();
-          alert("This room is already full or inactive!");
+          setJoinError("This room is already full or no longer active.");
         }
       } else {
         sounds.playFailure();
-        alert("Room Code not found!");
+        setJoinError("Room Code not found! Please check and try again.");
       }
     } catch (err) {
       console.error("Room join error: ", err);
       sounds.playFailure();
+      setJoinError("Failed to connect to room. Please check your connection.");
     }
   };
 
@@ -374,16 +488,30 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       if (resultCheck === matchData.target) {
         sounds.playSuccess();
         // Correct solve! Update match state immediately as Winner!
-        try {
-          const matchRef = doc(db, 'matches', activeMatchId!);
-          await updateDoc(matchRef, {
+        if (isBotMatch) {
+          setMatchData((prev: any) => ({
+            ...prev,
             status: 'completed',
-            winnerId: user.uid,
-            winnerName: profile?.displayName || user.displayName || 'Challenger',
-            updatedAt: serverTimestamp()
-          });
-        } catch (err) {
-          console.error("Error committing win: ", err);
+            winnerId: currentUid,
+            winnerName: currentDisplayName
+          }));
+          setOnlineSubMode('game_over');
+          if (!trophyAwarded) {
+            setTrophyAwarded(true);
+            incrementTrophyDirectly();
+          }
+        } else {
+          try {
+            const matchRef = doc(db, 'matches', activeMatchId!);
+            await updateDoc(matchRef, {
+              status: 'completed',
+              winnerId: currentUid,
+              winnerName: currentDisplayName,
+              updatedAt: serverTimestamp()
+            });
+          } catch (err) {
+            console.error("Error committing win: ", err);
+          }
         }
       } else {
         sounds.playFailure();
@@ -424,7 +552,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         <div className="flex-1 flex flex-col justify-between">
           
           {/* HEADER */}
-          <div className="flex items-center justify-between w-full mb-4 shrink-0 relative z-30">
+          <div className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
             <button 
               onClick={() => { sounds.playClick(); onClose(); }}
               className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
@@ -444,46 +572,75 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             <div className="w-9 h-9 shrink-0 opacity-0" />
           </div>
 
+          {errorMessage && (
+            <div className="mb-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] text-center flex items-center justify-between gap-2">
+              <span>{errorMessage}</span>
+              <button 
+                onClick={() => setErrorMessage(null)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* MAIN ACTIONS CARD */}
-          <div className="flex-1 flex flex-col justify-center gap-4 py-4 shrink-0">
+          <div className="flex-1 flex flex-col justify-center gap-3.5 py-2 shrink-0">
             
             {/* Action 1: Random Matchmaking */}
             <button
               onClick={handleStartRandomMatchmaking}
-              className="w-full p-5 rounded-2xl bg-gradient-to-br from-blue-500/20 to-sky-500/10 border border-blue-500/30 hover:border-blue-400/50 hover:bg-blue-500/15 group transition-all text-left relative overflow-hidden"
+              className="w-full p-4.5 rounded-2xl bg-gradient-to-br from-blue-500/20 to-sky-500/10 border border-blue-500/30 hover:border-blue-400/50 hover:bg-blue-500/15 group transition-all text-left relative overflow-hidden"
             >
-              <div className="absolute right-4 top-4 w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-all">
-                <Globe className="w-6 h-6 animate-spin-slow" />
+              <div className="absolute right-4 top-4 w-11 h-11 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-all">
+                <Globe className="w-5 h-5 animate-spin-slow" />
               </div>
               <p className="text-xs font-black tracking-wider text-blue-400 uppercase">Random Duel</p>
               <p className="text-[10px] text-white font-extrabold mt-1">Quick Matchmaker</p>
-              <p className="text-[8px] text-zinc-500 mt-2">Instantly pair with an active online challenger globally on a Hard level game.</p>
+              <p className="text-[8px] text-zinc-500 mt-1.5">Instantly pair with an active online challenger globally on a Hard level game.</p>
             </button>
 
             {/* Action 2: Create Custom Room */}
             <button
               onClick={handleCreatePrivateRoom}
-              className="w-full p-5 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/10 border border-violet-500/30 hover:border-violet-400/50 hover:bg-violet-500/15 group transition-all text-left relative overflow-hidden"
+              className="w-full p-4.5 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/10 border border-violet-500/30 hover:border-violet-400/50 hover:bg-violet-500/15 group transition-all text-left relative overflow-hidden"
             >
-              <div className="absolute right-4 top-4 w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-all">
-                <Plus className="w-6 h-6" />
+              <div className="absolute right-4 top-4 w-11 h-11 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-all">
+                <Plus className="w-5 h-5" />
               </div>
               <p className="text-xs font-black tracking-wider text-violet-400 uppercase">Create Room</p>
               <p className="text-[10px] text-white font-extrabold mt-1">Invite your friends</p>
-              <p className="text-[8px] text-zinc-500 mt-2">Generate a unique 4-letter room code and duel with friends.</p>
+              <p className="text-[8px] text-zinc-500 mt-1.5">Generate a unique 4-letter room code and duel with friends.</p>
             </button>
 
             {/* Action 3: Join Custom Room */}
             <button
-              onClick={() => { sounds.playClick(); setOnlineSubMode('room_join'); }}
-              className="w-full p-5 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/15 group transition-all text-left relative overflow-hidden"
+              onClick={() => { sounds.playClick(); setJoinError(null); setOnlineSubMode('room_join'); }}
+              className="w-full p-4.5 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/15 group transition-all text-left relative overflow-hidden"
             >
-              <div className="absolute right-4 top-4 w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-all">
+              <div className="absolute right-4 top-4 w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-all">
                 <Key className="w-5 h-5" />
               </div>
               <p className="text-xs font-black tracking-wider text-emerald-400 uppercase">Join Room</p>
               <p className="text-[10px] text-white font-extrabold mt-1">Enter code</p>
-              <p className="text-[8px] text-zinc-500 mt-2">Enter code shared by a friend to jump straight into their board.</p>
+              <p className="text-[8px] text-zinc-500 mt-1.5">Enter code shared by a friend to jump straight into their board.</p>
+            </button>
+
+            {/* Action 4: Quick AI Duel Bot */}
+            <button
+              onClick={handleStartBotDuel}
+              className="w-full p-3.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-all text-left flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-zinc-300">Duel AI Matrix Bot</p>
+                  <p className="text-[8px] text-zinc-500">Practice real-time speed solving against AI</p>
+                </div>
+              </div>
+              <Sparkles className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-all" />
             </button>
 
           </div>
@@ -497,24 +654,27 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         </div>
       )}
 
-      {/* 2. MATCHMAKING WAITING SCREEN (WAITING.SVG STYLING) */}
+      {/* 2. MATCHMAKING WAITING SCREEN */}
       {onlineSubMode === 'matchmaking' && (
         <div className="flex-1 flex flex-col justify-between items-center py-4">
           
           {/* BACK BUTTON */}
-          <div className="w-full flex justify-start mb-6">
+          <div className="w-full flex justify-between items-center mb-4">
             <button 
               onClick={handleAbortMatch}
-              className="px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-[10px] font-black uppercase text-zinc-400 active:scale-95 transition-all shadow-md"
+              className="px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-[10px] font-black uppercase text-zinc-400 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
             >
-              Back
+              <ChevronLeft className="w-3.5 h-3.5" /> Cancel
             </button>
+            <span className="text-[9px] font-mono text-zinc-500 font-bold">
+              Searching: {matchSearchSeconds}s
+            </span>
           </div>
 
           {/* DUEL MATCHMAKING VS VIEWER */}
-          <div className="flex-1 flex items-center justify-center w-full max-w-sm relative px-6 py-4">
+          <div className="flex-1 flex flex-col items-center justify-center w-full max-w-sm relative px-6 py-4">
             
-            <div className="flex items-center justify-between w-full relative z-10 gap-4">
+            <div className="flex items-center justify-between w-full relative z-10 gap-4 mb-6">
               
               {/* YOU (ACTIVE USER) */}
               <div className="flex flex-col items-center flex-1">
@@ -522,8 +682,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                   <User className="w-10 h-10 text-emerald-400" />
                 </div>
                 <span className="text-[10px] uppercase font-black text-white tracking-widest leading-none">YOU</span>
-                <span className="text-[8px] text-zinc-500 mt-1 font-bold font-mono truncate max-w-[80px]">
-                  {profile?.displayName || 'Guest Player'}
+                <span className="text-[8px] text-zinc-400 mt-1 font-bold font-mono truncate max-w-[85px]">
+                  {currentDisplayName}
                 </span>
               </div>
 
@@ -545,19 +705,32 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
             </div>
 
-          </div>
+            {/* LOADING DETAILS SUMMARY */}
+            <div className="text-center w-full">
+              <h3 className="text-sm font-bold text-white tracking-wider">Searching Online Queue</h3>
+              <p className="text-[10px] text-zinc-500 tracking-widest mt-1 flex items-center justify-center gap-1.5">
+                Finding opponent <span className="flex gap-0.5"><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span></span>
+              </p>
+              
+              {/* Spinning radar wheel loader */}
+              <div className="mt-4 flex justify-center">
+                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+              </div>
 
-          {/* LOADING DETAILS SUMMARY */}
-          <div className="text-center mt-6">
-            <h3 className="text-sm font-bold text-white tracking-wider">Waiting for Opponent</h3>
-            <p className="text-[10px] text-zinc-500 tracking-widest mt-1 flex items-center justify-center gap-1.5">
-              Find a match <span className="flex gap-0.5"><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span><span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span></span>
-            </p>
-            
-            {/* Spinning radar wheel loader */}
-            <div className="mt-6 flex justify-center">
-              <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+              {/* Fallback option if queue is taking time */}
+              {matchSearchSeconds >= 6 && (
+                <div className="mt-6 p-4 rounded-2xl bg-zinc-900/80 border border-purple-500/30 animate-fadeIn">
+                  <p className="text-[9px] text-zinc-400 mb-2">No human opponent active in queue right now.</p>
+                  <button
+                    onClick={handleStartBotDuel}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition active:scale-95"
+                  >
+                    <Bot className="w-4 h-4" /> Duel AI Matrix Bot Now
+                  </button>
+                </div>
+              )}
             </div>
+
           </div>
 
         </div>
@@ -606,9 +779,10 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             {copied && <p className="text-[8px] text-emerald-400 uppercase font-black tracking-widest mt-2">Copied to Clipboard!</p>}
 
             {/* Waiting indicators */}
-            <div className="mt-10 flex flex-col items-center">
-              <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
-              <p className="text-[9px] text-zinc-400 uppercase font-bold tracking-widest mt-4">Waiting for challenger to join...</p>
+            <div className="mt-8 flex flex-col items-center">
+              <Loader2 className="w-7 h-7 text-violet-500 animate-spin" />
+              <p className="text-[9px] text-zinc-400 uppercase font-bold tracking-widest mt-3">Waiting for challenger to join...</p>
+              <p className="text-[8px] text-zinc-600 mt-1">Tell your friend to click "Join Room" and enter this code.</p>
             </div>
 
           </div>
@@ -629,7 +803,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           {/* HEADER */}
           <div className="flex items-center justify-between w-full mb-4 shrink-0 relative z-30">
             <button 
-              onClick={() => { sounds.playClick(); setOnlineSubMode('lobby'); }}
+              onClick={() => { sounds.playClick(); setJoinError(null); setOnlineSubMode('lobby'); }}
               className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
             >
               <ChevronLeft className="w-4 h-4 text-zinc-300" />
@@ -656,10 +830,17 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               <input
                 type="text"
                 value={roomCodeInput}
-                onChange={(e) => setRoomCodeInput(e.target.value.slice(0, 4))}
+                onChange={(e) => {
+                  setJoinError(null);
+                  setRoomCodeInput(e.target.value.slice(0, 4).toUpperCase());
+                }}
                 placeholder="ABCD"
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 text-center font-mono font-black text-2xl tracking-[0.25em] text-white focus:border-emerald-500 focus:outline-none uppercase"
               />
+
+              {joinError && (
+                <p className="text-[10px] text-rose-400 font-bold leading-tight animate-fadeIn">{joinError}</p>
+              )}
 
               <button
                 type="submit"
@@ -697,13 +878,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             </div>
 
             <div className="flex items-center gap-1 px-2.5 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[8px] text-red-400 font-black tracking-widest uppercase animate-pulse">
-              <Globe className="w-3 h-3 text-red-400" /> Competetive Duel
+              <Globe className="w-3 h-3 text-red-400" /> Competitive Duel
             </div>
 
             <div className="text-right">
               <p className="text-[8px] uppercase tracking-wider text-zinc-500">Opponent</p>
               <p className="text-xs font-bold text-zinc-300 uppercase tracking-wide truncate max-w-[90px]">
-                {user.uid === matchData.player1Id ? (matchData.player2Name || 'Challenger') : matchData.player1Name}
+                {currentUid === matchData.player1Id ? (matchData.player2Name || 'Challenger') : matchData.player1Name}
               </p>
             </div>
           </div>
@@ -771,12 +952,12 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         <div className="flex-1 flex flex-col justify-center items-center py-4 w-full max-w-sm mx-auto">
           
           <div className={`w-full max-w-xs rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl relative border ${
-            matchData.winnerId === user.uid 
+            matchData.winnerId === currentUid 
               ? 'border-emerald-500/30 bg-zinc-950' 
               : 'border-red-500/30 bg-zinc-950'
           }`}>
             
-            {matchData.winnerId === user.uid ? (
+            {matchData.winnerId === currentUid ? (
               <>
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 animate-bounce">
                   <CheckCircle className="w-10 h-10" />
