@@ -15,10 +15,12 @@ import {
   ChevronLeft,
   Globe,
   WifiOff,
-  MapPin
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
 import { MathMatrixBoard } from './components/MathMatrixBoard';
+import { AdvanceModeBoard } from './components/AdvanceModeBoard';
 import { LeaderboardView } from './components/LeaderboardView';
 import { LevelSelector } from './components/LevelSelector';
 import { OnlineLobby } from './components/OnlineLobby';
@@ -44,7 +46,7 @@ function GameDashboard() {
   const theme = THEMES.matrix;
 
   // Dialog/Modal overlays
-  const [activeOverlay, setActiveOverlay] = useState<'none' | 'rankings' | 'settings' | 'levels' | 'online_lobby'>('none');
+  const [activeOverlay, setActiveOverlay] = useState<'none' | 'rankings' | 'settings' | 'levels' | 'online_lobby' | 'play_advance'>('none');
   const [authHelpTab, setAuthHelpTab] = useState<'netlify_env' | 'permission_info'>('netlify_env');
   
   // Menu navigation state: 'main' displays (Play Offline, Play Online, Level)
@@ -245,6 +247,14 @@ function GameDashboard() {
                   className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(14,165,233,0.3)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.4)] transform active:scale-95 transition-all text-center border border-sky-400/20 uppercase flex items-center justify-center gap-2"
                 >
                   <Globe className="w-4 h-4" /> Play Online
+                </button>
+
+                {/* PLAY ADVANCE (NEW SYMBOLS PUZZLE SPEEDRUN MODE) */}
+                <button
+                  onClick={() => { sounds.playClick(); setActiveOverlay('play_advance'); }}
+                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(168,85,247,0.3)] hover:shadow-[0_6px_20px_rgba(168,85,247,0.4)] transform active:scale-95 transition-all text-center border border-purple-400/20 uppercase flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" /> Play Advance
                 </button>
 
                 {/* LEVEL (100 STAGES GRID MAP SELECTOR) */}
@@ -577,6 +587,42 @@ function GameDashboard() {
               theme={theme} 
               onClose={() => setActiveOverlay('none')} 
             />
+          </div>
+        </div>
+      )}
+
+      {/* 9. PLAY ADVANCE OFFLINE GAMEPLAY SYSTEM SCREEN */}
+      {activeOverlay === 'play_advance' && (
+        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none`}>
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+
+          {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
+          <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
+            <svg viewBox="0 0 100 100" className="w-full h-full text-blue-500">
+              <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
+              <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
+              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
+              <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
+              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" />
+              <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </div>
+
+          <div className="absolute -bottom-24 -right-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_8s_infinite_alternate_2s]">
+            <svg viewBox="0 0 100 100" className="w-full h-full text-pink-500">
+              <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
+              <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
+              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
+              <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
+              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity={0.8} />
+              <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
+              <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </div>
+
+          <div className="flex-1 flex flex-col justify-between max-w-sm mx-auto w-full relative z-10 text-white">
+            <AdvanceModeBoard theme={theme} onExit={() => setActiveOverlay('none')} />
           </div>
         </div>
       )}

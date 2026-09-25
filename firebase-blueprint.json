@@ -42,20 +42,34 @@
       "properties": {
         "matchId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "type": { "type": "string", "enum": ["random", "room"] },
+        "playMode": { "type": "string", "enum": ["normal", "advance"] },
         "status": { "type": "string", "enum": ["waiting", "active", "completed", "abandoned"] },
         "player1Id": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "player1Name": { "type": "string", "minLength": 2, "maxLength": 30 },
         "player2Id": { "type": "string" },
         "player2Name": { "type": "string" },
+        "player1Score": { "type": "number" },
+        "player2Score": { "type": "number" },
+        "player1Selection": { "type": "array" },
+        "player2Selection": { "type": "array" },
+        "currentRound": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "winnerId": { "type": "string" },
+        "winnerName": { "type": "string" },
+        "grid": { "type": "array" },
         "target": { "type": "number" },
         "formulaDisplay": { "type": "string" },
         "formulaSize": { "type": "number" },
-        "winnerId": { "type": "string" },
-        "winnerName": { "type": "string" },
+        "advanceA": { "type": "number" },
+        "advanceB": { "type": "number" },
+        "advanceC": { "type": "number" },
+        "rematchRequestedBy": { "type": "string" },
+        "rematchAccepted": { "type": "boolean" },
+        "rematchDeclined": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["matchId", "type", "status", "player1Id", "player1Name", "target", "formulaDisplay", "formulaSize", "createdAt", "updatedAt"]
+      "required": ["matchId", "type", "playMode", "status", "player1Id", "player1Name", "createdAt", "updatedAt"]
     }
   },
   "firestore": {

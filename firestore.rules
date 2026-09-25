@@ -55,20 +55,36 @@ service cloud.firestore {
     }
 
     function isValidMultiplayerMatch(data) {
-      return data.keys().hasAll(['matchId', 'type', 'status', 'player1Id', 'player1Name', 'target', 'formulaDisplay', 'formulaSize', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['matchId', 'type', 'status', 'player1Id', 'player1Name', 'player2Id', 'player2Name', 'target', 'formulaDisplay', 'formulaSize', 'grid', 'winnerId', 'winnerName', 'createdAt', 'updatedAt'])
+      return data.keys().hasAll(['matchId', 'type', 'playMode', 'status', 'player1Id', 'player1Name', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'matchId', 'type', 'playMode', 'status', 'player1Id', 'player1Name', 
+          'player2Id', 'player2Name', 'player1Score', 'player2Score', 
+          'player1Selection', 'player2Selection', 'currentRound', 'expiresAt', 
+          'winnerId', 'winnerName', 'grid', 'target', 'formulaDisplay', 'formulaSize', 
+          'advanceA', 'advanceB', 'advanceC', 'rematchRequestedBy', 'rematchAccepted', 
+          'rematchDeclined', 'createdAt', 'updatedAt'
+        ])
         && data.matchId is string && data.matchId.size() <= 128
         && (data.type == 'random' || data.type == 'room')
+        && (data.playMode == 'normal' || data.playMode == 'advance')
         && (data.status == 'waiting' || data.status == 'active' || data.status == 'completed' || data.status == 'abandoned')
         && data.player1Id is string && data.player1Id.size() <= 128
         && data.player1Name is string && data.player1Name.size() >= 2 && data.player1Name.size() <= 30
         && (!data.keys().contains('player2Id') || data.player2Id == null || (data.player2Id is string && data.player2Id.size() <= 128))
         && (!data.keys().contains('player2Name') || data.player2Name == null || (data.player2Name is string && data.player2Name.size() <= 30))
-        && data.target is number
-        && data.formulaDisplay is string && data.formulaDisplay.size() <= 100
-        && data.formulaSize is number
         && (!data.keys().contains('winnerId') || data.winnerId == null || (data.winnerId is string && data.winnerId.size() <= 128))
-        && (!data.keys().contains('winnerName') || data.winnerName == null || (data.winnerName is string && data.winnerName.size() <= 30));
+        && (!data.keys().contains('winnerName') || data.winnerName == null || (data.winnerName is string && data.winnerName.size() <= 30))
+        && (!data.keys().contains('target') || data.target == null || data.target is number)
+        && (!data.keys().contains('formulaDisplay') || data.formulaDisplay == null || (data.formulaDisplay is string && data.formulaDisplay.size() <= 100))
+        && (!data.keys().contains('formulaSize') || data.formulaSize == null || data.formulaSize is number)
+        && (!data.keys().contains('advanceA') || data.advanceA == null || data.advanceA is number)
+        && (!data.keys().contains('advanceB') || data.advanceB == null || data.advanceB is number)
+        && (!data.keys().contains('advanceC') || data.advanceC == null || data.advanceC is number)
+        && (!data.keys().contains('rematchRequestedBy') || data.rematchRequestedBy == null || (data.rematchRequestedBy is string && data.rematchRequestedBy.size() <= 128))
+        && (!data.keys().contains('rematchAccepted') || data.rematchAccepted == null || data.rematchAccepted is bool)
+        && (!data.keys().contains('rematchDeclined') || data.rematchDeclined == null || data.rematchDeclined is bool)
+        && (!data.keys().contains('expiresAt') || data.expiresAt == null || data.expiresAt is number)
+        && (!data.keys().contains('currentRound') || data.currentRound == null || data.currentRound is number);
     }
 
     // Rules for Users
