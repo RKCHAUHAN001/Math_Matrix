@@ -395,12 +395,48 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const loginWithGoogle = async () => {
     setAuthError(null);
+
+    // Detect if running inside a native mobile app (Capacitor Android/iOS)
+    const isNative = typeof (window as any).Capacitor !== 'undefined' && 
+      typeof (window as any).Capacitor.isNativePlatform === 'function' && 
+      (window as any).Capacitor.isNativePlatform();
+
+    if (isNative) {
+      try {
+        // Check for Capacitor native GoogleAuth plugin (@codetrix-studio/capacitor-google-auth)
+        const nativeGoogleAuth = (window as any).Capacitor?.Plugins?.GoogleAuth;
+        if (nativeGoogleAuth) {
+          const googleUser = await nativeGoogleAuth.signIn();
+          const { GoogleAuthProvider, signInWithCredential } = await import('firebase/auth');
+          const idToken = googleUser?.authentication?.idToken || googleUser?.idToken;
+          if (idToken) {
+            const credential = GoogleAuthProvider.credential(idToken);
+            await signInWithCredential(auth, credential);
+            return;
+          }
+        }
+      } catch (nativeError: any) {
+        console.error("Native Google sign-in failed:", nativeError);
+        setAuthError(nativeError.message || "Google Sign-In failed on Android. Please check your keystore SHA-1 in Firebase Console.");
+        return;
+      }
+
+      // If native plugin is not installed, DO NOT call signInWithRedirect inside WebView!
+      // In Android WebView, signInWithRedirect causes "The requested action is invalid." because
+      // WebViews cannot maintain the OAuth session state across navigation.
+      const nativeNotice = "On Android APK, Google Sign-In requires the native Google Play Services plugin (@codetrix-studio/capacitor-google-auth). In the meantime, your game progress and high scores are automatically saved locally on your device!";
+      console.warn(nativeNotice);
+      setAuthError(nativeNotice);
+      return;
+    }
+
+    // Standard web browser flow (Vite dev, Netlify, Chrome, Safari)
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       console.warn("Popup sign-in failed, checking fallback:", error);
       
-      // Auto fallback to redirect if popup is blocked, cancelled, or closed by the user
+      // Auto fallback to redirect if popup is blocked, cancelled, or closed by the user in browser
       if (
         error && 
         (error.code === 'auth/popup-closed-by-user' || 
@@ -426,6 +462,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const logout = async () => {
     try {
+      const isNative = typeof (window as any).Capacitor !== 'undefined' && 
+        typeof (window as any).Capacitor.isNativePlatform === 'function' && 
+        (window as any).Capacitor.isNativePlatform();
+      
+      if (isNative) {
+        try {
+          await (window as any).Capacitor?.Plugins?.GoogleAuth?.signOut();
+        } catch (e) {}
+      }
+
       await signOut(auth);
       setUser(null);
       setProfile(null);

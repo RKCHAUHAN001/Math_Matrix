@@ -224,10 +224,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const [matchData, setMatchData] = useState<any>(null);
   const [isCreator, setIsCreator] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [rulesCopied, setRulesCopied] = useState<boolean>(false);
   const [trophyAwarded, setTrophyAwarded] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showRulesModal, setShowRulesModal] = useState<boolean>(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [matchSearchSeconds, setMatchSearchSeconds] = useState<number>(0);
   const [isBotMatch, setIsBotMatch] = useState<boolean>(false);
@@ -492,9 +490,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       }
     }, (err) => {
       console.warn("Active match subscription warning:", err);
-      if (err?.code === 'permission-denied') {
-        setShowRulesModal(true);
-      }
     });
 
     return () => {
@@ -551,16 +546,10 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           setOnlineSubMode('game_active');
         } catch (err: any) {
           console.warn("Matchmaking connect error:", err);
-          if (err?.code === 'permission-denied') {
-            setShowRulesModal(true);
-          }
         }
       }
     }, (err) => {
       console.warn("Queue loop note:", err);
-      if (err?.code === 'permission-denied') {
-        setShowRulesModal(true);
-      }
     });
 
     return () => {
@@ -692,7 +681,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     } catch (err: any) {
       console.warn("Queue registry issue:", err);
       if (err?.code === 'permission-denied') {
-        setShowRulesModal(true);
+        setErrorMessage("Firebase Permission Error: Standard database write restrictions are active.");
       }
     }
   };
@@ -805,7 +794,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     } catch (err: any) {
       console.warn("Room creation error:", err);
       if (err?.code === 'permission-denied') {
-        setShowRulesModal(true);
+        setErrorMessage("Firebase Permission Error: Standard database write restrictions are active.");
       }
     }
   };
@@ -859,8 +848,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       console.error("Room join error: ", err);
       sounds.playFailure();
       if (err?.code === 'permission-denied') {
-        setShowRulesModal(true);
-        setJoinError("Firebase Permission Error: Please update Firestore Security Rules.");
+        setJoinError("Firebase Permission Error: Standard database write restrictions are active.");
       } else {
         setJoinError("Failed to connect to room. Please check your connection.");
       }
@@ -874,14 +862,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       sounds.playClick();
       setTimeout(() => setCopied(false), 2000);
     }
-  };
-
-  const copyRulesToClipboard = () => {
-    const rulesText = `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}`;
-    navigator.clipboard.writeText(rulesText);
-    setRulesCopied(true);
-    sounds.playClick();
-    setTimeout(() => setRulesCopied(false), 3000);
   };
 
   // REMATCH AD CALLBACKS
@@ -1330,13 +1310,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               </p>
             </div>
 
-            <button
-              onClick={() => setShowRulesModal(true)}
-              title="Firestore Security Rules Setup Guide"
-              className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-amber-400 hover:text-amber-300 active:scale-95 transition-all shadow-md shrink-0"
-            >
-              <ShieldAlert className="w-4 h-4" />
-            </button>
+            <div className="w-9 h-9 shrink-0 opacity-0 pointer-events-none" />
           </div>
 
           {errorMessage && (
@@ -1985,65 +1959,6 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
           </div>
 
-        </div>
-      )}
-
-      {/* 7. FIREBASE SECURITY RULES HELP MODAL */}
-      {showRulesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="max-w-md w-full bg-zinc-950 border border-amber-500/40 rounded-3xl p-5 shadow-2xl relative text-left">
-            <button
-              onClick={() => setShowRulesModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-2 mb-2">
-              <ShieldAlert className="w-5 h-5 text-amber-400" />
-              <h3 className="text-sm font-black uppercase tracking-wider text-white">
-                Firestore Security Rules
-              </h3>
-            </div>
-
-            <p className="text-[10px] text-zinc-400 leading-relaxed mb-3">
-              To allow multiplayer match rooms to sync across devices, please paste these rules into your Firebase Console:
-            </p>
-
-            <ol className="text-[9px] text-zinc-300 space-y-1 mb-3 list-decimal list-inside font-medium">
-              <li>Open <span className="text-blue-400 font-mono">console.firebase.google.com</span></li>
-              <li>Select your Firebase project</li>
-              <li>Go to <span className="text-white font-bold">Build &rarr; Firestore Database &rarr; Rules</span></li>
-              <li>Paste the rules below and click <span className="text-emerald-400 font-bold">Publish</span></li>
-            </ol>
-
-            <div className="relative bg-black/80 border border-zinc-800 rounded-xl p-3 font-mono text-[10px] text-zinc-300 mb-3 overflow-x-auto">
-              <pre className="text-emerald-400 text-[9px] leading-tight">
-{`rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`}
-              </pre>
-              <button
-                onClick={copyRulesToClipboard}
-                className="absolute top-2 right-2 px-2 py-1 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white rounded-lg text-[9px] font-bold flex items-center gap-1 active:scale-95 transition-all"
-              >
-                {rulesCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                {rulesCopied ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-
-            <button
-              onClick={() => setShowRulesModal(false)}
-              className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md active:scale-95 transition-all text-center"
-            >
-              Got It
-            </button>
-          </div>
         </div>
       )}
 
