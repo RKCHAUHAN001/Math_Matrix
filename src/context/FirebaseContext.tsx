@@ -419,6 +419,13 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Check for Capacitor native GoogleAuth plugin (@codetrix-studio/capacitor-google-auth)
         const nativeGoogleAuth = (window as any).Capacitor?.Plugins?.GoogleAuth;
         if (nativeGoogleAuth) {
+          try {
+            await nativeGoogleAuth.initialize({
+              clientId: '243943546060-qmn02qfgv0lf7s438d73mgpf3vpiqp6p.apps.googleusercontent.com'
+            });
+          } catch (initErr) {
+            console.warn("GoogleAuth native initialization warning:", initErr);
+          }
           const googleUser = await nativeGoogleAuth.signIn();
           const { GoogleAuthProvider, signInWithCredential } = await import('firebase/auth');
           const idToken = googleUser?.authentication?.idToken || googleUser?.idToken;
