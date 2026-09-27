@@ -54,6 +54,7 @@ interface FirebaseContextType {
   loading: boolean;
   isOnline: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfileTheme: (theme: UserProfile['theme']) => Promise<void>;
   updateProfileBiometrics: (enabled: boolean) => Promise<void>;
@@ -252,8 +253,18 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mergedHighScore = Math.max(firestoreProfile.highScore || 0, localProfile?.highScore || 0);
         const mergedStreak = Math.max(firestoreProfile.streak || 0, localProfile?.streak || 0);
         
+        let resolvedName = firestoreProfile.displayName;
+        if (
+          (!resolvedName || resolvedName === 'Anonymous player' || resolvedName === 'Matrix Explorer') && 
+          currentUser.displayName && 
+          !currentUser.isAnonymous
+        ) {
+          resolvedName = currentUser.displayName;
+        }
+
         finalProfile = {
           ...firestoreProfile,
+          displayName: resolvedName || 'Anonymous player',
           highScore: mergedHighScore,
           streak: mergedStreak,
           socialLink: localProfile?.socialLink || firestoreProfile.socialLink || '',
@@ -279,9 +290,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else {
         // Profile does not exist in Firestore yet (new user)
         const today = getLocalDateString();
+        const resolvedName = (!currentUser.isAnonymous && currentUser.displayName) || localProfile?.displayName || 'Anonymous player';
+
         finalProfile = {
           uid: currentUser.uid,
-          displayName: currentUser.displayName || 'Anonymous player',
+          displayName: resolvedName,
           socialLink: localProfile?.socialLink || '',
           streak: localProfile?.streak || 1,
           lastActiveDate: localProfile?.lastActiveDate || today,
@@ -417,16 +430,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       } catch (nativeError: any) {
         console.error("Native Google sign-in failed:", nativeError);
-        setAuthError(nativeError.message || "Google Sign-In failed on Android. Please check your keystore SHA-1 in Firebase Console.");
+        setAuthError("Google Authentication Fail");
         return;
       }
 
-      // If native plugin is not installed, DO NOT call signInWithRedirect inside WebView!
-      // In Android WebView, signInWithRedirect causes "The requested action is invalid." because
-      // WebViews cannot maintain the OAuth session state across navigation.
-      const nativeNotice = "On Android APK, Google Sign-In requires the native Google Play Services plugin (@codetrix-studio/capacitor-google-auth). In the meantime, your game progress and high scores are automatically saved locally on your device!";
-      console.warn(nativeNotice);
-      setAuthError(nativeNotice);
+      setAuthError("Google Authentication Fail");
       return;
     }
 
@@ -460,16 +468,57 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const loginWithEmail = async (email: string, pass: string) => {
+    setAuthError(null);
+    try {
+      const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+      
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (signInErr: any) {
+        // If user doesn't exist or is registering, create account!
+        if (
+          signInErr.code === 'auth/user-not-found' || 
+          signInErr.code === 'auth/invalid-credential' || 
+          signInErr.code === 'auth/invalid-email'
+        ) {
+          try {
+            await createUserWithEmailAndPassword(auth, email, pass);
+          } catch (createErr: any) {
+            console.error("User registration failed:", createErr);
+            throw createErr;
+          }
+        } else {
+          throw signInErr;
+        }
+      }
+    } catch (err: any) {
+      console.error("Email sync failed:", err);
+      let errorMsg = err.message || "Failed to sync account with email.";
+      if (err.code === 'auth/weak-password') {
+        errorMsg = "Password is too weak. Please use at least 6 characters.";
+      } else if (err.code === 'auth/invalid-email') {
+        errorMsg = "Invalid email format. Please check your spelling.";
+      }
+      setAuthError(errorMsg);
+      throw err;
+    }
+  };
+
   const logout = async () => {
     try {
       const isNative = typeof (window as any).Capacitor !== 'undefined' && 
         typeof (window as any).Capacitor.isNativePlatform === 'function' && 
         (window as any).Capacitor.isNativePlatform();
       
-      if (isNative) {
+      const isGoogleLoggedIn = user?.providerData?.some((p: any) => p.providerId === 'google.com');
+
+      if (isNative && isGoogleLoggedIn) {
         try {
           await (window as any).Capacitor?.Plugins?.GoogleAuth?.signOut();
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Native Google signOut skipped or failed:", e);
+        }
       }
 
       await signOut(auth);
@@ -736,7 +785,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       incrementStreakDirectly,
       incrementTrophyDirectly,
       authError,
-      clearAuthError
+      clearAuthError,
+      loginWithEmail
     }}>
       {children}
     </FirebaseContext.Provider>
