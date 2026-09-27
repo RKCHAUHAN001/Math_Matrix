@@ -516,6 +516,31 @@ function GameDashboard() {
                   )}
                 </div>
 
+                {/* ⚖️ LEGAL AND PRIVACY DOCUMENT SELECTOR */}
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-teal-400">⚖️ Legal & Agreements</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href="/privacy.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => sounds.playClick()}
+                      className="py-2.5 bg-zinc-900/80 hover:bg-zinc-800 border border-white/5 text-[10px] font-black uppercase tracking-widest text-zinc-300 rounded-xl transition active:scale-95 text-center flex items-center justify-center font-bold"
+                    >
+                      Privacy Policy
+                    </a>
+                    <a
+                      href="/terms.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => sounds.playClick()}
+                      className="py-2.5 bg-zinc-900/80 hover:bg-zinc-800 border border-white/5 text-[10px] font-black uppercase tracking-widest text-zinc-300 rounded-xl transition active:scale-95 text-center flex items-center justify-center font-bold"
+                    >
+                      Terms of Use
+                    </a>
+                  </div>
+                </div>
+
                 <div className="flex justify-center pt-2">
                   <PWAInstallButton theme={theme} />
                 </div>
