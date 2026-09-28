@@ -19,6 +19,7 @@ import {
   Sparkles,
   AlertTriangle
 } from 'lucide-react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
 import { MathMatrixBoard } from './components/MathMatrixBoard';
 import { AdvanceModeBoard } from './components/AdvanceModeBoard';
@@ -85,6 +86,45 @@ function GameDashboard() {
       setSocialLinkInput(profile.socialLink || '');
     }
   }, [profile]);
+
+  // Listen for native Android hardware back button presses
+  useEffect(() => {
+    let handler: any;
+
+    const setupBackButton = async () => {
+      const isNative = typeof (window as any).Capacitor !== 'undefined' && 
+        typeof (window as any).Capacitor.isNativePlatform === 'function' && 
+        (window as any).Capacitor.isNativePlatform();
+
+      if (!isNative) return;
+
+      try {
+        handler = await CapacitorApp.addListener('backButton', () => {
+          sounds.playClick();
+          if (activeOverlay !== 'none') {
+            setActiveOverlay('none');
+          } else if (gameActive) {
+            setGameActive(false);
+          } else if (menuView === 'play_offline') {
+            setMenuView('main');
+          } else {
+            // No active screen/overlay, safe to minimize or exit the app
+            CapacitorApp.exitApp();
+          }
+        });
+      } catch (err) {
+        console.warn("Capacitor App backButton listener error:", err);
+      }
+    };
+
+    setupBackButton();
+
+    return () => {
+      if (handler && typeof handler.remove === 'function') {
+        handler.remove();
+      }
+    };
+  }, [activeOverlay, gameActive, menuView]);
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
