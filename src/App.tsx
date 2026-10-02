@@ -31,6 +31,7 @@ import { PWAInstallButton } from './components/PWAInstallButton';
 import { AdMobSimulator } from './components/AdMobSimulator';
 import { THEMES } from './utils/themes';
 import sounds from './utils/audio';
+import { parseAndValidateSocialUrl, getSocialInfo } from './utils/social';
 
 function GameDashboard() {
   const { 
@@ -56,6 +57,10 @@ function GameDashboard() {
       setOfflineToast(null);
     }, 3500);
   };
+
+  // Social link validation & feedback states
+  const [socialLinkError, setSocialLinkError] = useState<string | null>(null);
+  const [socialLinkSuccess, setSocialLinkSuccess] = useState<boolean>(false);
 
   // Email Account Sync local states
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
@@ -160,12 +165,27 @@ function GameDashboard() {
   const handleUpdateSocialLink = async (e: React.FormEvent) => {
     e.preventDefault();
     sounds.playClick();
+    setSocialLinkError(null);
+    setSocialLinkSuccess(false);
+
+    const validation = parseAndValidateSocialUrl(socialLinkInput);
+    if (!validation.valid) {
+      sounds.playFailure();
+      setSocialLinkError(validation.error || 'Invalid link format');
+      return;
+    }
+
     if (!profile) return;
     try {
-      await updateProfileSocialLink(socialLinkInput.trim());
+      const clean = validation.cleanUrl || '';
+      await updateProfileSocialLink(clean);
+      setSocialLinkInput(clean);
+      setSocialLinkSuccess(true);
       sounds.playSuccess();
+      setTimeout(() => setSocialLinkSuccess(false), 3500);
     } catch (err) {
       console.error("Error writing social link update:", err);
+      setSocialLinkError("Failed to save link. Please try again.");
     }
   };
 
@@ -514,22 +534,64 @@ function GameDashboard() {
                   </form>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-pink-400 mb-2">🔗 Social Profile Link (X, Insta, Linkedin)</p>
-                  <form onSubmit={handleUpdateSocialLink} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={socialLinkInput}
-                      onChange={(e) => setSocialLinkInput(e.target.value)}
-                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-pink-500 focus:outline-none font-mono"
-                      placeholder="e.g. instagram.com/username"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95"
-                    >
-                      Save
-                    </button>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-pink-400">🔗 Social Media Profile Link</p>
+                    <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">FB • X • Insta • LinkedIn • YouTube</span>
+                  </div>
+
+                  <form onSubmit={handleUpdateSocialLink} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={socialLinkInput}
+                        onChange={(e) => {
+                          setSocialLinkInput(e.target.value);
+                          if (socialLinkError) setSocialLinkError(null);
+                        }}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-pink-500 focus:outline-none font-mono placeholder:text-zinc-600"
+                        placeholder="e.g. https://www.instagram.com/mr.rkchauhan?stkn=..."
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95 shrink-0"
+                      >
+                        Save
+                      </button>
+                    </div>
+
+                    {socialLinkError && (
+                      <p className="text-[10px] text-rose-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                        ⚠️ {socialLinkError}
+                      </p>
+                    )}
+
+                    {socialLinkSuccess && (
+                      <p className="text-[10px] text-emerald-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                        ✓ Social link saved and linked to your ranking records!
+                      </p>
+                    )}
+
+                    {/* Preview active link if present */}
+                    {(() => {
+                      const activeInfo = getSocialInfo(socialLinkInput || profile.socialLink);
+                      if (!activeInfo) return null;
+                      return (
+                        <div className="flex items-center justify-between pt-1">
+                          <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border ${activeInfo.bgColor} ${activeInfo.borderColor} ${activeInfo.color} uppercase tracking-wider`}>
+                            {activeInfo.label} Linked
+                          </span>
+                          <a
+                            href={activeInfo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] font-bold text-pink-400 hover:text-pink-300 underline flex items-center gap-1"
+                          >
+                            Test Link ↗
+                          </a>
+                        </div>
+                      );
+                    })()}
                   </form>
                 </div>
 

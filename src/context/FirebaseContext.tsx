@@ -648,6 +648,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setProfile(updated);
     localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
 
+    // Also update any local leaderboard entries so ranking page immediately reflects it
+    const updatedLocal = localLeaderboard.map((item) => {
+      if (item.userId === (user?.uid || profile.uid) || item.displayName === profile.displayName) {
+        return { ...item, socialLink: link };
+      }
+      return item;
+    });
+    setLocalLeaderboard(updatedLocal);
+    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+
     if (isOnline && user) {
       try {
         const ref = doc(db, 'users', user.uid);
@@ -655,6 +665,22 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           socialLink: link,
           updatedAt: serverTimestamp()
         });
+
+        // Also update all existing scores submitted by this user in Firestore
+        try {
+          const scoresCol = collection(db, 'scores');
+          const userScoresQuery = query(scoresCol, where('userId', '==', user.uid));
+          const snap = await getDocs(userScoresQuery);
+          snap.forEach(async (docSnapshot) => {
+            try {
+              await updateDoc(doc(db, 'scores', docSnapshot.id), {
+                socialLink: link
+              });
+            } catch (e) {}
+          });
+        } catch (scoreUpdateErr) {
+          console.warn("Could not sync socialLink across previous scores:", scoreUpdateErr);
+        }
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
       }
