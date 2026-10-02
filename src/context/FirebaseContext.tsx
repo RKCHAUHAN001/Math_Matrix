@@ -86,6 +86,31 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const clearAuthError = () => setAuthError(null);
 
+  // Initialize Native GoogleAuth on app startup to prevent uninitialized crashes on re-opening
+  useEffect(() => {
+    const isNative = typeof (window as any).Capacitor !== 'undefined' && 
+      typeof (window as any).Capacitor.isNativePlatform === 'function' && 
+      (window as any).Capacitor.isNativePlatform();
+
+    if (isNative) {
+      const initNativeGoogle = async () => {
+        try {
+          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+          const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID || '243943546060-qmn02qfgv0lf7s438d73mgpf3vpiqp6p.apps.googleusercontent.com';
+          await GoogleAuth.initialize({
+            clientId: webClientId,
+            serverClientId: webClientId,
+            scopes: ['profile', 'email'],
+            grantOfflineAccess: true
+          } as any);
+        } catch (err) {
+          console.warn("Early native GoogleAuth init warning:", err);
+        }
+      };
+      initNativeGoogle();
+    }
+  }, []);
+
   // Automatically listen for and resolve redirected sign-ins
   useEffect(() => {
     if (isOnline) {
@@ -416,33 +441,43 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (isNative) {
       try {
-        // Check for Capacitor native GoogleAuth plugin (@codetrix-studio/capacitor-google-auth)
-        const nativeGoogleAuth = (window as any).Capacitor?.Plugins?.GoogleAuth;
-        if (nativeGoogleAuth) {
-          try {
-            await nativeGoogleAuth.initialize({
-              clientId: '243943546060-qmn02qfgv0lf7s438d73mgpf3vpiqp6p.apps.googleusercontent.com'
-            });
-          } catch (initErr) {
-            console.warn("GoogleAuth native initialization warning:", initErr);
-          }
-          const googleUser = await nativeGoogleAuth.signIn();
-          const { GoogleAuthProvider, signInWithCredential } = await import('firebase/auth');
-          const idToken = googleUser?.authentication?.idToken || googleUser?.idToken;
-          if (idToken) {
-            const credential = GoogleAuthProvider.credential(idToken);
-            await signInWithCredential(auth, credential);
-            return;
-          }
+        // Load Capacitor native GoogleAuth plugin dynamically so it gets compiled into the Vite bundle
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        
+        if (!GoogleAuth) {
+          setAuthError("Google Authentication Fail: Capacitor GoogleAuth plugin could not be imported.");
+          return;
+        }
+
+        try {
+          const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID || '243943546060-qmn02qfgv0lf7s438d73mgpf3vpiqp6p.apps.googleusercontent.com';
+          await GoogleAuth.initialize({
+            clientId: webClientId,
+            serverClientId: webClientId,
+            scopes: ['profile', 'email'],
+            grantOfflineAccess: true
+          } as any);
+        } catch (initErr) {
+          console.warn("GoogleAuth native initialization warning:", initErr);
+        }
+
+        const googleUser: any = await GoogleAuth.signIn();
+        const { GoogleAuthProvider, signInWithCredential } = await import('firebase/auth');
+        const idToken = googleUser?.authentication?.idToken || googleUser?.idToken;
+        if (idToken) {
+          const credential = GoogleAuthProvider.credential(idToken);
+          await signInWithCredential(auth, credential);
+          return;
+        } else {
+          setAuthError("Google Authentication Fail: Sign-in completed but ID Token is missing.");
+          return;
         }
       } catch (nativeError: any) {
         console.error("Native Google sign-in failed:", nativeError);
-        setAuthError("Google Authentication Fail");
+        const detailMsg = nativeError?.message || nativeError?.error || (typeof nativeError === 'object' ? JSON.stringify(nativeError) : String(nativeError));
+        setAuthError(`Google Authentication Fail: ${detailMsg}`);
         return;
       }
-
-      setAuthError("Google Authentication Fail");
-      return;
     }
 
     // Standard web browser flow (Vite dev, Netlify, Chrome, Safari)
@@ -520,19 +555,31 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       const isGoogleLoggedIn = user?.providerData?.some((p: any) => p.providerId === 'google.com');
 
-      if (isNative && isGoogleLoggedIn) {
-        try {
-          await (window as any).Capacitor?.Plugins?.GoogleAuth?.signOut();
-        } catch (e) {
-          console.warn("Native Google signOut skipped or failed:", e);
-        }
-      }
-
+      // 1. Sign out of Firebase and reset local state FIRST so logout always succeeds reliably
       await signOut(auth);
       setUser(null);
       setProfile(null);
       localStorage.removeItem(LOCAL_PROFILE_KEY);
       loadGuestProfile();
+
+      // 2. Clear native Google Play Services account picker cache safely
+      if (isNative && isGoogleLoggedIn) {
+        try {
+          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+          const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID || '243943546060-qmn02qfgv0lf7s438d73mgpf3vpiqp6p.apps.googleusercontent.com';
+          try {
+            await GoogleAuth.initialize({
+              clientId: webClientId,
+              serverClientId: webClientId,
+              scopes: ['profile', 'email'],
+              grantOfflineAccess: true
+            } as any);
+          } catch (ie) {}
+          await GoogleAuth.signOut();
+        } catch (e) {
+          console.warn("Native Google signOut safely skipped:", e);
+        }
+      }
     } catch (error) {
       console.error("Logout failed:", error);
     }

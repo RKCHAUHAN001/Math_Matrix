@@ -4,10 +4,10 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { RotateCcw, Volume2, VolumeX, Zap, CheckCircle2, ChevronRight, ChevronLeft, Map, AlertTriangle, RefreshCw, Globe, Heart } from 'lucide-react';
+import { RotateCcw, Volume2, VolumeX, Zap, CheckCircle2, ChevronRight, ChevronLeft, Map, AlertTriangle, RefreshCw, Globe, Heart, Star, Award, Sparkles } from 'lucide-react';
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
-import { LEVELS, LevelConfig } from '../utils/levels';
+import { LEVELS, LevelConfig, getLevelDetail, calculateLevelStars, saveLevelStars, getLevelStars, LevelDetail } from '../utils/levels';
 import { AdMobSimulator } from './AdMobSimulator';
 
 interface MathMatrixBoardProps {
@@ -147,6 +147,11 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   const [showLevelSuccessOverlay, setShowLevelSuccessOverlay] = useState<boolean>(false);
   const [showLevelFailureOverlay, setShowLevelFailureOverlay] = useState<boolean>(false);
 
+  // Level Mode detail and star tracking
+  const [currentLevelDetail, setCurrentLevelDetail] = useState<LevelDetail | null>(null);
+  const [levelMaxTime, setLevelMaxTime] = useState<number>(25);
+  const [earnedStars, setEarnedStars] = useState<number>(1);
+
   // References
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -231,6 +236,20 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   };
 
   const generateBoardAndEquation = (forcedScore?: number) => {
+    // 1. True Level Mode: Fetch handcrafted milestone or deterministic procedural puzzle
+    if (isLevelMode && currentLevelNum !== undefined) {
+      const detail = getLevelDetail(currentLevelNum);
+      setCurrentLevelDetail(detail);
+      setCurrentFormula(detail.formula);
+      setGrid([...detail.grid]);
+      setTarget(detail.target);
+      setTimeLeft(detail.timeLimit);
+      setLevelMaxTime(detail.timeLimit);
+      setSelectedIndices([]);
+      return;
+    }
+
+    // 2. Standard Endless / Online Mode: Procedural generation with score scaling
     const currentScore = forcedScore !== undefined ? forcedScore : score;
     const templates = getFormulasForScore(activeDifficulty, currentScore);
     const template = templates[Math.floor(Math.random() * templates.length)];
@@ -363,8 +382,12 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   const handleLevelClearedSuccess = () => {
     sounds.playSuccess();
     
-    // Write next level unlock to localStorage
+    // Calculate and save 3-Star Rating
     if (currentLevelNum !== undefined) {
+      const stars = calculateLevelStars(timeLeft, levelMaxTime, lives);
+      setEarnedStars(stars);
+      saveLevelStars(currentLevelNum, stars);
+
       const nextLevel = currentLevelNum + 1;
       const currentHighest = localStorage.getItem('math_matrix_highest_unlocked_level') || '1';
       if (nextLevel > parseInt(currentHighest, 10)) {
@@ -449,16 +472,39 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
         <div className={`w-full rounded-xl border ${theme.border} ${theme.cardBg} p-2.5 mb-2 flex items-center justify-between shadow-md`}>
           {isLevelMode ? (
             <>
-              <div>
-                <p className="text-[8px] uppercase tracking-wider text-blue-400 font-bold">Levels Mode</p>
-                <p className="text-base font-black tracking-wider text-white">
-                  Level: {currentLevelNum} {activeDifficulty === 'hard' ? '(Hard)' : ''}
+              <div className="min-w-0 pr-1">
+                <div className="flex items-center gap-1.5">
+                  {currentLevelDetail?.isBoss ? (
+                    <span className="text-[7.5px] uppercase tracking-wider text-amber-400 font-black px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5" /> Boss Level
+                    </span>
+                  ) : (
+                    <p className="text-[8px] uppercase tracking-wider text-blue-400 font-bold">Level Mode</p>
+                  )}
+                </div>
+                <p className="text-xs sm:text-sm font-black tracking-wide text-white truncate mt-0.5">
+                  {currentLevelDetail?.title || `Level ${currentLevelNum}`}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-[8px] uppercase tracking-wider text-zinc-500">Stage Status</p>
-                <p className="text-xs font-bold text-zinc-300 uppercase tracking-wide">
-                  Solving...
+
+              {/* GORGEOUS HEART LIVES CONTAINER */}
+              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-full shrink-0">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Heart
+                    key={i}
+                    className={`w-3.5 h-3.5 transition-all duration-300 ${
+                      i < lives 
+                        ? "text-red-500 fill-red-500 filter drop-shadow-[0_0_2px_rgba(239,68,68,0.5)] scale-110" 
+                        : "text-zinc-700 fill-zinc-800 scale-95"
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="text-right shrink-0">
+                <p className="text-[8px] uppercase tracking-wider text-zinc-500">Tier</p>
+                <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">
+                  {activeDifficulty}
                 </p>
               </div>
             </>
@@ -595,16 +641,49 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
             
             <div className="absolute -top-12 -left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 animate-pulse">
-              <CheckCircle2 className="w-10 h-10" />
+            {/* 3-STAR RATING ANIMATION */}
+            <div className="flex items-center justify-center gap-2.5 mb-3">
+              {[1, 2, 3].map((starIdx) => {
+                const isEarned = starIdx <= earnedStars;
+                return (
+                  <div
+                    key={starIdx}
+                    className={`transition-all duration-500 transform ${
+                      isEarned 
+                        ? 'text-amber-400 scale-110 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]' 
+                        : 'text-zinc-700 scale-90 opacity-30'
+                    }`}
+                  >
+                    <Star 
+                      className={`w-9 h-9 ${isEarned ? 'fill-amber-400' : 'fill-transparent'}`} 
+                    />
+                  </div>
+                );
+              })}
             </div>
 
-            <h3 className="text-lg font-black tracking-widest text-white uppercase leading-none mb-1">
-              Level Clear!
+            <h3 className="text-base font-black tracking-widest text-white uppercase leading-none mb-1">
+              {earnedStars === 3 ? 'PERFECT 3-STAR!' : earnedStars === 2 ? 'EXCELLENT CLEAR!' : 'STAGE CLEARED!'}
             </h3>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-6">
-              Level {currentLevelNum} Completed
+            <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-3">
+              {currentLevelDetail?.title || `Level ${currentLevelNum} Completed`}
             </p>
+
+            {/* PERFORMANCE METRICS */}
+            <div className="w-full bg-zinc-900/80 border border-zinc-850 rounded-2xl p-2.5 mb-4 space-y-1.5 text-[10px]">
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 uppercase font-bold text-[9px]">Time Left:</span>
+                <span className="font-mono text-emerald-400 font-bold">{timeLeft}s / {levelMaxTime}s</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 uppercase font-bold text-[9px]">Hearts Left:</span>
+                <span className="text-red-400 font-bold">{'❤️'.repeat(lives)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 uppercase font-bold text-[9px]">Stars Earned:</span>
+                <span className="text-amber-400 font-black">{earnedStars} / 3 ⭐</span>
+              </div>
+            </div>
 
             <div className="w-full space-y-2 relative z-10">
               {currentLevelNum !== undefined && currentLevelNum < 100 ? (
@@ -618,9 +697,19 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
                 <p className="text-[10px] text-yellow-500 font-bold uppercase mb-2">🏆 You Completed All 100 Levels!</p>
               )}
 
+              {/* Replay this level for 3 stars */}
+              {earnedStars < 3 && (
+                <button
+                  onClick={handleRetryLevel}
+                  className="w-full py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 font-bold text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <RefreshCw className="w-3 h-3" /> Replay For 3 Stars
+                </button>
+              )}
+
               <button
                 onClick={() => { sounds.playClick(); if (onExitLevelMode) onExitLevelMode(); }}
-                className="w-full py-3 rounded-2xl bg-zinc-900 border border-zinc-850 hover:bg-zinc-850 text-zinc-400 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                className="w-full py-2.5 rounded-2xl bg-zinc-900 border border-zinc-850 hover:bg-zinc-850 text-zinc-400 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95"
               >
                 <Map className="w-3.5 h-3.5" /> Levels Map
               </button>

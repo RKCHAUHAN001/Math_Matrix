@@ -31,14 +31,50 @@ export const AdMobSimulator: React.FC<AdMobSimulatorProps> = ({
   onAdCompleted,
   onAdCancelled
 }) => {
-  if (!isOpen) return null;
-
+  const [isShowingNativeAd, setIsShowingNativeAd] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(6); // Fast 6 seconds simulation for smooth gameplay testing
   const [muted, setMuted] = useState<boolean>(false);
   const [adStage, setAdStage] = useState<'playing' | 'completed'>('playing');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    if (!isOpen) {
+      setIsShowingNativeAd(false);
+      return;
+    }
+
+    let active = true;
+
+    // Check if running natively. If yes, try showing actual native Google Test Ads!
+    const tryNativeAd = async () => {
+      try {
+        const { playNativeRewardedAd } = await import('../utils/admob');
+        const wasShownNatively = await playNativeRewardedAd(
+          () => {
+            if (active) onAdCompleted();
+          },
+          () => {
+            if (active) onAdCancelled();
+          }
+        );
+        if (wasShownNatively && active) {
+          setIsShowingNativeAd(true);
+        }
+      } catch (err) {
+        console.warn("Could not play native ad, falling back to simulator:", err);
+      }
+    };
+
+    tryNativeAd();
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, adType]);
+
+  useEffect(() => {
+    if (!isOpen || isShowingNativeAd) return;
+
     sounds.playClick();
     setTimeLeft(6);
     setAdStage('playing');
@@ -58,7 +94,9 @@ export const AdMobSimulator: React.FC<AdMobSimulatorProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [adType]);
+  }, [isOpen, isShowingNativeAd, adType]);
+
+  if (!isOpen || isShowingNativeAd) return null;
 
   const handleClaimReward = () => {
     sounds.playSuccess();

@@ -28,7 +28,6 @@ import { LevelSelector } from './components/LevelSelector';
 import { OnlineLobby } from './components/OnlineLobby';
 import { ChallengeShare } from './components/ChallengeShare';
 import { PWAInstallButton } from './components/PWAInstallButton';
-import { OfflineIndicator } from './components/OfflineIndicator';
 import { AdMobSimulator } from './components/AdMobSimulator';
 import { THEMES } from './utils/themes';
 import sounds from './utils/audio';
@@ -46,6 +45,17 @@ function GameDashboard() {
     clearAuthError,
     localLeaderboard
   } = useFirebase();
+
+  // Floating Toast state for offline alerts
+  const [offlineToast, setOfflineToast] = useState<string | null>(null);
+
+  const showNoInternetToast = (msg: string) => {
+    sounds.playFailure();
+    setOfflineToast(msg);
+    setTimeout(() => {
+      setOfflineToast(null);
+    }, 3500);
+  };
 
   // Email Account Sync local states
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
@@ -181,6 +191,10 @@ function GameDashboard() {
 
   const handleStartOnlineGame = () => {
     sounds.playClick();
+    if (!isOnline) {
+      showNoInternetToast("No Internet Connection. Connect to internet to play online.");
+      return;
+    }
     // Allow immediate entry into the online matchmaking lobby using guest or synced account
     setActiveOverlay('online_lobby');
   };
@@ -535,6 +549,10 @@ function GameDashboard() {
                     <button
                       onClick={async () => {
                         sounds.playClick();
+                        if (!isOnline) {
+                          showNoInternetToast("No Internet Connection. Connect to internet to sign out.");
+                          return;
+                        }
                         await logout();
                         sounds.playSuccess();
                         setActiveOverlay('none');
@@ -547,6 +565,10 @@ function GameDashboard() {
                     <button
                       onClick={async () => {
                         sounds.playClick();
+                        if (!isOnline) {
+                          showNoInternetToast("No Internet Connection. Connect to internet to sign in or sync.");
+                          return;
+                        }
                         setShowSyncModal(true);
                       }}
                       className="px-3.5 py-2 rounded-xl border border-blue-500/30 text-[9px] uppercase font-black tracking-wider text-blue-400 hover:text-blue-300 bg-blue-500/10 transition shrink-0 active:scale-95"
@@ -600,9 +622,9 @@ function GameDashboard() {
         </div>
       )}
 
-      {/* 7. IMMERSIVE FULL-PAGE LEVELS MAP SELECTOR */}
+      {/* 7. IMMERSIVE CANDY CRUSH STYLE FULL-PAGE LEVELS MAP */}
       {activeOverlay === 'levels' && (
-        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none`}>
+        <div className={`fixed inset-0 z-50 flex flex-col ${theme.bg} overflow-hidden select-none text-white animate-fadeIn`}>
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
           {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
@@ -630,7 +652,7 @@ function GameDashboard() {
             </svg>
           </div>
 
-          <div className="flex-1 flex flex-col justify-between max-w-sm mx-auto w-full relative z-10">
+          <div className="flex-1 flex flex-col max-w-md mx-auto w-full h-full relative z-10 overflow-hidden shadow-2xl">
             <LevelSelector theme={theme} onClose={() => { setActiveOverlay('none'); setMenuView('main'); }} onSelectLevel={(lvl) => handleStartLevelGame(lvl)} />
           </div>
         </div>
@@ -713,8 +735,18 @@ function GameDashboard() {
         </div>
       )}
 
-      {/* Connection Monitor banners */}
-      <OfflineIndicator />
+      {/* Sleek Floating No-Internet Toast */}
+      {offlineToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[250] max-w-sm w-[90%] px-4 py-3 rounded-2xl bg-zinc-950/95 border border-amber-500/50 text-white shadow-2xl backdrop-blur-md flex items-center gap-3 animate-fadeIn">
+          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
+            <WifiOff className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-[11px] font-black uppercase tracking-wider text-amber-400">No Internet Connection</p>
+            <p className="text-[9px] text-zinc-300 leading-tight mt-0.5 truncate">{offlineToast}</p>
+          </div>
+        </div>
+      )}
 
       {/* AUTH ERROR / PRODUCTION-READY MODAL */}
       {authError && (
@@ -874,6 +906,11 @@ function GameDashboard() {
             <form onSubmit={async (e) => {
               e.preventDefault();
               sounds.playClick();
+              if (!isOnline) {
+                sounds.playFailure();
+                setSyncError("No Internet Connection. Connect to the internet to sign in.");
+                return;
+              }
               if (!syncEmail || !syncPassword) {
                 setSyncError("Please fill out both email and password.");
                 return;
@@ -938,6 +975,11 @@ function GameDashboard() {
               type="button"
               onClick={async () => {
                 sounds.playClick();
+                if (!isOnline) {
+                  sounds.playFailure();
+                  setSyncError("No Internet Connection. Connect to the internet to sign in with Google.");
+                  return;
+                }
                 setSyncLoading(true);
                 setSyncError(null);
                 try {
