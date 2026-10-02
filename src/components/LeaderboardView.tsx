@@ -92,7 +92,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
   const remainingRanks = scores.slice(3);
 
   return (
-    <div className="w-full flex flex-col text-white select-none h-full justify-between">
+    <div className="w-full flex flex-col text-white select-none h-full">
       
       {/* 1. COMPRESSED HEADER */}
       <header className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
