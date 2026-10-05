@@ -41,6 +41,7 @@ function GameDashboard() {
     loginWithGoogle, 
     loginWithEmail,
     logout,
+    updateProfileDisplayName,
     updateProfileSocialLink,
     authError,
     clearAuthError,
@@ -61,6 +62,11 @@ function GameDashboard() {
   // Social link validation & feedback states
   const [socialLinkError, setSocialLinkError] = useState<string | null>(null);
   const [socialLinkSuccess, setSocialLinkSuccess] = useState<boolean>(false);
+
+  // Nickname update feedback states
+  const [nameUpdateSuccess, setNameUpdateSuccess] = useState<string | null>(null);
+  const [nameUpdateError, setNameUpdateError] = useState<string | null>(null);
+  const [nameUpdateLoading, setNameUpdateLoading] = useState<boolean>(false);
 
   // Email Account Sync local states
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
@@ -144,21 +150,36 @@ function GameDashboard() {
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
     sounds.playClick();
-    if (!profile) return;
+    setNameUpdateError(null);
+    setNameUpdateSuccess(null);
 
     const trimmed = displayNameInput.trim();
-    if (trimmed.length >= 2 && trimmed.length <= 30) {
-      try {
-        const localCopy = localStorage.getItem('math_matrix_profile');
-        if (localCopy) {
-          const parsed = JSON.parse(localCopy);
-          parsed.displayName = trimmed;
-          localStorage.setItem('math_matrix_profile', JSON.stringify(parsed));
-          window.location.reload(); // Refresh cleanly to trigger sync merge
-        }
-      } catch (err) {
-        console.error("Error writing name update:", err);
+    if (trimmed.length < 2 || trimmed.length > 30) {
+      sounds.playFailure();
+      setNameUpdateError("Nickname must be between 2 and 30 characters.");
+      return;
+    }
+
+    try {
+      setNameUpdateLoading(true);
+      const res = await updateProfileDisplayName(trimmed);
+      setNameUpdateLoading(false);
+      if (res.success) {
+        sounds.playSuccess();
+        setNameUpdateSuccess(
+          res.recordsUpdated > 0
+            ? `✓ Nickname updated & ${res.recordsUpdated} previous ${res.recordsUpdated === 1 ? 'record' : 'records'} updated!`
+            : `✓ Nickname updated successfully!`
+        );
+        setTimeout(() => setNameUpdateSuccess(null), 4000);
+      } else {
+        sounds.playFailure();
+        setNameUpdateError(res.error || "Failed to update nickname.");
       }
+    } catch (err: any) {
+      setNameUpdateLoading(false);
+      sounds.playFailure();
+      setNameUpdateError(err?.message || "Failed to update nickname.");
     }
   };
 
@@ -407,22 +428,24 @@ function GameDashboard() {
         )}
       </main>
 
-      {/* 4. BOTTOM CONTROLS ROW */}
-      <footer className="w-full flex justify-center gap-3 z-20 shrink-0 select-none pb-2">
-        <button
-          onClick={() => { sounds.playClick(); setActiveOverlay(activeOverlay === 'rankings' ? 'none' : 'rankings'); }}
-          className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95 transition-all min-w-[130px] tracking-widest"
-        >
-          🏆 Rankings
-        </button>
+      {/* 4. BOTTOM CONTROLS ROW - ONLY VISIBLE AND ACCESSIBLE FROM MAIN PAGE */}
+      {!gameActive && activeOverlay === 'none' && menuView === 'main' && (
+        <footer className="w-full flex justify-center gap-3 z-20 shrink-0 select-none pb-2 animate-fadeIn">
+          <button
+            onClick={() => { sounds.playClick(); setActiveOverlay('rankings'); }}
+            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95 hover:bg-white/15 transition-all min-w-[130px] tracking-widest"
+          >
+            🏆 Rankings
+          </button>
 
-        <button
-          onClick={() => { sounds.playClick(); setActiveOverlay(activeOverlay === 'settings' ? 'none' : 'settings'); }}
-          className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95 transition-all min-w-[130px] tracking-widest"
-        >
-          ⚙️ Settings
-        </button>
-      </footer>
+          <button
+            onClick={() => { sounds.playClick(); setActiveOverlay('settings'); }}
+            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95 hover:bg-white/15 transition-all min-w-[130px] tracking-widest"
+          >
+            ⚙️ Settings
+          </button>
+        </footer>
+      )}
 
       {/* 5. IMMERSIVE FULL-PAGE HALL OF FAME LEADERBOARD */}
       {activeOverlay === 'rankings' && (
@@ -513,24 +536,45 @@ function GameDashboard() {
 
             {profile ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-blue-400 mb-2">👤 Nickname Settings</p>
-                  <form onSubmit={handleUpdateName} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={displayNameInput}
-                      onChange={(e) => setDisplayNameInput(e.target.value)}
-                      maxLength={30}
-                      minLength={2}
-                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
-                      placeholder="Edit nickname"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95"
-                    >
-                      Save
-                    </button>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-blue-400">👤 Nickname & Records</p>
+                    <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">Syncs Past Records</span>
+                  </div>
+                  <form onSubmit={handleUpdateName} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={displayNameInput}
+                        onChange={(e) => {
+                          setDisplayNameInput(e.target.value);
+                          if (nameUpdateError) setNameUpdateError(null);
+                        }}
+                        maxLength={30}
+                        minLength={2}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
+                        placeholder="Edit nickname"
+                      />
+                      <button
+                        type="submit"
+                        disabled={nameUpdateLoading}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                      >
+                        {nameUpdateLoading ? 'Updating...' : 'Save'}
+                      </button>
+                    </div>
+
+                    {nameUpdateError && (
+                      <p className="text-[10px] text-rose-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                        ⚠️ {nameUpdateError}
+                      </p>
+                    )}
+
+                    {nameUpdateSuccess && (
+                      <p className="text-[10px] text-emerald-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                        {nameUpdateSuccess}
+                      </p>
+                    )}
                   </form>
                 </div>
 

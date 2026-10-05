@@ -59,7 +59,8 @@ interface FirebaseContextType {
   updateProfileTheme: (theme: UserProfile['theme']) => Promise<void>;
   updateProfileBiometrics: (enabled: boolean) => Promise<void>;
   updateProfileNotifications: (enabled: boolean) => Promise<void>;
-  updateProfileSocialLink: (link: string) => Promise<void>;
+  updateProfileDisplayName: (newName: string) => Promise<{ success: boolean; recordsUpdated: number; error?: string }>;
+  updateProfileSocialLink: (link: string) => Promise<{ success: boolean; recordsUpdated: number }>;
   submitScore: (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => Promise<void>;
   getLeaderboard: (difficulty?: LeaderboardEntry['difficulty']) => Promise<LeaderboardEntry[]>;
   localLeaderboard: LeaderboardEntry[];
@@ -642,21 +643,122 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const updateProfileSocialLink = async (link: string) => {
-    if (!profile) return;
+  const updateProfileDisplayName = async (newName: string): Promise<{ success: boolean; recordsUpdated: number; error?: string }> => {
+    if (!profile) return { success: false, recordsUpdated: 0, error: 'No active profile found' };
+
+    const cleanName = newName.trim();
+    if (cleanName.length < 2 || cleanName.length > 30) {
+      return { success: false, recordsUpdated: 0, error: 'Nickname must be between 2 and 30 characters.' };
+    }
+
+    const previousName = profile.displayName;
+    const currentUid = user?.uid || profile.uid;
+
+    // 1. Update Profile in memory and localStorage
+    const updatedProfile: UserProfile = {
+      ...profile,
+      displayName: cleanName,
+      updatedAt: new Date().toISOString()
+    };
+    setProfile(updatedProfile);
+    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+
+    let totalUpdated = 0;
+
+    // 2. Retroactively update all local leaderboard records
+    const updatedLocal = localLeaderboard.map((item) => {
+      if (item.userId === currentUid || item.displayName === previousName) {
+        totalUpdated++;
+        return { ...item, displayName: cleanName };
+      }
+      return item;
+    });
+    setLocalLeaderboard(updatedLocal);
+    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+
+    // 3. Update pending offline scores queue if any
+    try {
+      const pending = localStorage.getItem(PENDING_SYNC_KEY);
+      if (pending) {
+        const pendingList = JSON.parse(pending) as LeaderboardEntry[];
+        const updatedPending = pendingList.map((entry) => ({
+          ...entry,
+          displayName: cleanName
+        }));
+        localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(updatedPending));
+      }
+    } catch (e) {
+      console.warn("Could not sync displayName across pending queue:", e);
+    }
+
+    // 4. If online & user authenticated, retroactively update Firestore User Doc and all previously submitted score documents
+    if (isOnline && user) {
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
+          displayName: cleanName,
+          updatedAt: serverTimestamp()
+        });
+
+        // Query all previous scores submitted by this user
+        const scoresCol = collection(db, 'scores');
+        const userScoresQuery = query(scoresCol, where('userId', '==', user.uid));
+        const snap = await getDocs(userScoresQuery);
+
+        const updatePromises: Promise<any>[] = [];
+        snap.forEach((docSnapshot) => {
+          updatePromises.push(
+            updateDoc(doc(db, 'scores', docSnapshot.id), {
+              displayName: cleanName
+            }).catch((err) => {
+              console.warn(`Could not update score ${docSnapshot.id}:`, err);
+            })
+          );
+        });
+
+        await Promise.all(updatePromises);
+        totalUpdated += updatePromises.length;
+      } catch (err) {
+        console.warn("Error updating user cloud records:", err);
+      }
+    }
+
+    return { success: true, recordsUpdated: totalUpdated };
+  };
+
+  const updateProfileSocialLink = async (link: string): Promise<{ success: boolean; recordsUpdated: number }> => {
+    if (!profile) return { success: false, recordsUpdated: 0 };
     const updated = { ...profile, socialLink: link };
     setProfile(updated);
     localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
 
+    let totalUpdated = 0;
+
     // Also update any local leaderboard entries so ranking page immediately reflects it
     const updatedLocal = localLeaderboard.map((item) => {
       if (item.userId === (user?.uid || profile.uid) || item.displayName === profile.displayName) {
+        totalUpdated++;
         return { ...item, socialLink: link };
       }
       return item;
     });
     setLocalLeaderboard(updatedLocal);
     localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+
+    // Update pending offline scores
+    try {
+      const pending = localStorage.getItem(PENDING_SYNC_KEY);
+      if (pending) {
+        const pendingList = JSON.parse(pending) as LeaderboardEntry[];
+        const updatedPending = pendingList.map((entry) => ({
+          ...entry,
+          socialLink: link
+        }));
+        localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(updatedPending));
+      }
+    } catch (e) {
+      console.warn("Could not sync socialLink across pending queue:", e);
+    }
 
     if (isOnline && user) {
       try {
@@ -671,13 +773,18 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const scoresCol = collection(db, 'scores');
           const userScoresQuery = query(scoresCol, where('userId', '==', user.uid));
           const snap = await getDocs(userScoresQuery);
-          snap.forEach(async (docSnapshot) => {
-            try {
-              await updateDoc(doc(db, 'scores', docSnapshot.id), {
+          const updatePromises: Promise<any>[] = [];
+          snap.forEach((docSnapshot) => {
+            updatePromises.push(
+              updateDoc(doc(db, 'scores', docSnapshot.id), {
                 socialLink: link
-              });
-            } catch (e) {}
+              }).catch((e) => {
+                console.warn(`Could not update socialLink on score ${docSnapshot.id}:`, e);
+              })
+            );
           });
+          await Promise.all(updatePromises);
+          totalUpdated += updatePromises.length;
         } catch (scoreUpdateErr) {
           console.warn("Could not sync socialLink across previous scores:", scoreUpdateErr);
         }
@@ -685,6 +792,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
       }
     }
+
+    return { success: true, recordsUpdated: totalUpdated };
   };
 
   const submitScore = async (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => {
@@ -857,6 +966,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateProfileTheme,
       updateProfileBiometrics,
       updateProfileNotifications,
+      updateProfileDisplayName,
       updateProfileSocialLink,
       submitScore,
       getLeaderboard,

@@ -142,7 +142,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [score, setScore] = useState<number>(0);
   const [combo, setCombo] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<number>(30);
+  const [timeLeft, setTimeLeft] = useState<number>(20);
   const [lives, setLives] = useState<number>(3);
   const [muted, setMuted] = useState<boolean>(false);
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
@@ -164,7 +164,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
   useEffect(() => {
     if (!isPlaying || gameOver) return;
 
-    setTimeLeft(30);
+    setTimeLeft(20);
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
@@ -185,9 +185,9 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
   // Progressive difficulty logic: 3, 4, or 5 numbers based on current score or remaining time
   const getRequiredNumCount = (currScore: number, currTime: number) => {
-    if (currScore >= 100 || currTime <= 10) {
+    if (currScore >= 100 || currTime <= 6) {
       return 5;
-    } else if (currScore >= 50 || currTime <= 20) {
+    } else if (currScore >= 50 || currTime <= 12) {
       return 4;
     }
     return 3;
@@ -201,7 +201,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
         triggerGameOver();
       } else {
         // Generate next puzzle on timeout
-        nextRound(false, score, 30);
+        nextRound(false, score, 20);
       }
       return nextLives;
     });
@@ -345,8 +345,8 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
       {!gameOver ? (
         <div className="flex-1 flex flex-col justify-center items-center w-full py-4 shrink-0">
           
-          {/* Main Equation Workspace Card */}
-          <div className="w-full p-6 rounded-3xl bg-zinc-950/90 border border-zinc-800 shadow-2xl relative mb-6">
+          {/* Main Equation Workspace Card - High Visibility Studio HUD */}
+          <div className="w-full p-5 rounded-3xl bg-gradient-to-b from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-purple-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_24px_rgba(168,85,247,0.2)] relative mb-5">
             
             {combo > 1 && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-amber-500 text-black text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center gap-1 animate-bounce">
@@ -354,23 +354,28 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
               </div>
             )}
 
-            <div className="text-center mb-1 text-[8px] uppercase tracking-widest font-bold text-zinc-500">
-              Fill in the Operators
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+              <span className="text-[9px] uppercase tracking-[0.25em] font-black text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]">
+                INSERT OPERATORS EQUATION
+              </span>
             </div>
 
             {/* THE FORMULA WORKSPACE */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono text-xl py-6 select-none leading-none">
+            <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono py-4 px-2 rounded-2xl bg-black/70 border border-white/10 shadow-inner select-none leading-none">
               
               {puzzle.numbers.map((num, idx) => (
                 <React.Fragment key={idx}>
-                  <span className="font-black text-white">{num}</span>
+                  <span className="font-black text-white text-2xl md:text-3xl px-1 drop-shadow-md">{num}</span>
                   {idx < puzzle.numbers.length - 1 && (
                     <button
                       onClick={() => { sounds.playClick(); setActiveSlotIndex(idx); }}
-                      className={`w-10 h-10 rounded-xl border flex items-center justify-center text-base font-black transition-all ${
+                      className={`w-11 h-11 md:w-12 md:h-12 rounded-2xl border-2 flex items-center justify-center text-lg md:text-xl font-black transition-all ${
                         activeSlotIndex === idx 
-                          ? 'border-cyan-500 bg-cyan-950/20 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]' 
-                          : (userOperators[idx] ? 'border-zinc-700 bg-zinc-900 text-white' : 'border-2 border-dashed border-zinc-800 text-zinc-700')
+                          ? 'border-cyan-400 bg-cyan-500/30 text-cyan-200 shadow-[0_0_16px_rgba(6,182,212,0.6)] scale-110' 
+                          : (userOperators[idx] 
+                              ? 'border-purple-400 bg-purple-500/30 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.4)]' 
+                              : 'border-dashed border-cyan-400/80 bg-cyan-950/40 text-cyan-300 animate-pulse shadow-[0_0_12px_rgba(6,182,212,0.3)]')
                       }`}
                     >
                       {userOperators[idx] || '?'}
@@ -380,10 +385,10 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
               ))}
 
               {/* Equals */}
-              <span className="text-zinc-600 font-sans">=</span>
+              <span className="text-zinc-300 font-mono font-black text-2xl md:text-3xl mx-1">=</span>
 
               {/* Solved Target */}
-              <span className="font-black text-cyan-400 filter drop-shadow-[0_0_6px_#06b6d4]">
+              <span className="px-3 py-1 rounded-2xl bg-cyan-500/20 border-2 border-cyan-400/60 font-black text-2xl md:text-3xl font-mono text-cyan-300 filter drop-shadow-[0_0_10px_rgba(6,182,212,0.7)]">
                 {puzzle.target}
               </span>
 

@@ -239,8 +239,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const [isRematchRequestReceived, setIsRematchRequestReceived] = useState<boolean>(false);
   const [rematchDeclinedMessage, setRematchDeclinedMessage] = useState<string | null>(null);
 
-  // Match Time left (2 minutes speedrun)
-  const [timeLeft, setTimeLeft] = useState<number>(120);
+  // Match Time left (5 minutes speedrun)
+  const [timeLeft, setTimeLeft] = useState<number>(300);
 
   // Normal mode cell selection indices, or Advance mode operator selections
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
@@ -341,13 +341,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     };
   }, [isBotMatch, onlineSubMode, matchData]);
 
-  // Game timer countdown logic (120 seconds duration)
+  // Game timer countdown logic (300 seconds duration)
   useEffect(() => {
     if (onlineSubMode !== 'game_active' || !matchData) return;
 
     const timerInterval = setInterval(async () => {
       const now = Date.now();
-      const expiresAt = matchData.expiresAt || (now + 120000);
+      const expiresAt = matchData.expiresAt || (now + 300000);
       const remaining = Math.max(0, Math.round((expiresAt - now) / 1000));
       
       setTimeLeft(remaining);
@@ -419,7 +419,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           lastRoundRef.current = 1;
           setSelectedIndices([]);
           setAdvanceSelections([]);
-          setTimeLeft(120);
+          setTimeLeft(300);
           setOnlineSubMode('game_active');
         }
 
@@ -527,7 +527,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             player2Id: currentUid,
             player2Name: currentDisplayName,
             status: 'active',
-            expiresAt: Date.now() + 120000,
+            expiresAt: Date.now() + 300000,
             updatedAt: serverTimestamp()
           });
 
@@ -539,7 +539,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             player2Id: currentUid,
             player2Name: currentDisplayName,
             status: 'active',
-            expiresAt: Date.now() + 120000
+            expiresAt: Date.now() + 300000
           });
           setIsCreator(false);
           sounds.playSuccess();
@@ -566,7 +566,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setIsCreator(false);
     setTrophyAwarded(false);
     setIsBotMatch(false);
-    setTimeLeft(120);
+    setTimeLeft(300);
     setIsRematchRequestedByMe(false);
     setIsRematchRequestReceived(false);
     setRematchDeclinedMessage(null);
@@ -659,7 +659,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           player2Id: currentUid,
           player2Name: currentDisplayName,
           status: 'active',
-          expiresAt: Date.now() + 120000,
+          expiresAt: Date.now() + 300000,
           updatedAt: serverTimestamp()
         });
 
@@ -669,7 +669,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           player2Id: currentUid,
           player2Name: currentDisplayName,
           status: 'active',
-          expiresAt: Date.now() + 120000
+          expiresAt: Date.now() + 300000
         });
         setIsCreator(false);
         setOnlineSubMode('game_active');
@@ -706,7 +706,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       player1Selection: [],
       player2Selection: [],
       currentRound: 1,
-      expiresAt: Date.now() + 120000,
+      expiresAt: Date.now() + 300000,
       winnerId: null,
       winnerName: null
     };
@@ -821,7 +821,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             player2Id: currentUid,
             player2Name: currentDisplayName,
             status: 'active',
-            expiresAt: Date.now() + 120000,
+            expiresAt: Date.now() + 300000,
             updatedAt: serverTimestamp()
           });
 
@@ -831,7 +831,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             player2Id: currentUid,
             player2Name: currentDisplayName,
             status: 'active',
-            expiresAt: Date.now() + 120000
+            expiresAt: Date.now() + 300000
           });
           setIsCreator(false);
           setOnlineSubMode('game_active');
@@ -874,7 +874,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     lastRoundRef.current = 1;
     setSelectedIndices([]);
     setAdvanceSelections([]);
-    setTimeLeft(120);
+    setTimeLeft(300);
     setIsRematchRequestedByMe(false);
     setIsRematchRequestReceived(false);
     setRematchDeclinedMessage(null);
@@ -901,7 +901,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         player1Selection: [],
         player2Selection: [],
         currentRound: 1,
-        expiresAt: Date.now() + 120000,
+        expiresAt: Date.now() + 300000,
         winnerId: null,
         winnerName: null
       };
@@ -951,7 +951,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       player1Selection: [],
       player2Selection: [],
       currentRound: 1,
-      expiresAt: Date.now() + 120000,
+      expiresAt: Date.now() + 300000,
       winnerId: null,
       winnerName: null,
       rematchRequestedBy: null,
@@ -1216,15 +1216,19 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       if (activeNumCount >= 5) activeNums.push(matchData.advanceE);
 
       return (
-        <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono text-white text-base py-1 leading-none select-none">
+        <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-white text-base py-1 leading-none select-none">
           {activeNums.map((num, idx) => {
             const sel = selections[idx] !== undefined ? selections[idx] : null;
             return (
               <React.Fragment key={idx}>
-                <span className="font-extrabold">{num}</span>
+                <span className="font-black text-white text-lg md:text-xl drop-shadow-sm">{num}</span>
                 {idx < activeNums.length - 1 && (
-                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-black transition-all ${
-                    sel ? (isOpponent ? 'border-pink-500/50 bg-pink-950/20 text-pink-400' : 'border-cyan-500/50 bg-cyan-950/20 text-cyan-400') : 'border-2 border-dashed border-zinc-800 text-zinc-700 animate-pulse bg-zinc-950/20'
+                  <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl border-2 flex items-center justify-center text-base font-black transition-all ${
+                    sel 
+                      ? (isOpponent 
+                          ? 'border-pink-400 bg-pink-500/30 text-pink-200 shadow-[0_0_12px_rgba(244,114,182,0.5)]' 
+                          : 'border-cyan-400 bg-cyan-500/30 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.5)]') 
+                      : 'border-dashed border-cyan-400/80 text-cyan-300 animate-pulse bg-cyan-950/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
                   }`}>
                     {sel || '?'}
                   </div>
@@ -1240,7 +1244,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       const alphabet = ['A', 'B', 'C'];
 
       return (
-        <div className="flex items-center justify-center gap-2 font-mono text-zinc-400">
+        <div className="flex items-center justify-center gap-2 font-mono text-white">
           {alphabet.map((letter, idx) => {
             if (idx >= matchData.formulaSize) return null;
 
@@ -1249,18 +1253,20 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
             return (
               <React.Fragment key={letter}>
-                <div className={`w-9 h-9 rounded-xl border flex items-center justify-center text-sm font-black transition-all ${
+                <div className={`w-10 h-10 md:w-11 md:h-11 rounded-2xl border-2 flex items-center justify-center text-base font-black transition-all ${
                   isFilled 
-                    ? (isOpponent ? 'border-pink-500/50 bg-pink-950/20 text-pink-400' : 'border-cyan-500/50 bg-cyan-950/20 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.3)]')
-                    : 'border-2 border-dashed border-zinc-800 text-zinc-700 animate-pulse bg-zinc-950/30'
+                    ? (isOpponent 
+                        ? 'border-pink-400 bg-pink-500/30 text-pink-200 shadow-[0_0_14px_rgba(244,114,182,0.5)]' 
+                        : 'border-emerald-400 bg-emerald-500/30 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.5)]')
+                    : 'border-dashed border-cyan-400/80 text-cyan-300 animate-pulse bg-cyan-950/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
                 }`}>
                   {isFilled ? selectionValue : '?'}
                 </div>
 
-                {idx === 0 && <span className="text-zinc-600 text-xs font-bold font-sans">*</span>}
+                {idx === 0 && <span className="text-amber-400 text-xl font-black font-sans mx-1">×</span>}
                 {idx === 1 && (
-                  <span className="text-zinc-600 text-xs font-bold font-sans">
-                    {display.includes('-') ? '-' : '+'}
+                  <span className={`${display.includes('-') ? 'text-rose-400' : 'text-cyan-400'} text-xl font-black font-sans mx-1`}>
+                    {display.includes('-') ? '−' : '+'}
                   </span>
                 )}
               </React.Fragment>
@@ -1455,7 +1461,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
           <div className="text-center py-1 shrink-0">
             <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold">
-              Multiplayer duels last 2 mins • Most solves wins
+              Multiplayer duels last 5 mins • Most solves wins
             </p>
           </div>
 
@@ -1711,34 +1717,40 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             </div>
           </div>
 
-          {/* 2-MIN GAME RUN TIME TIMER DISPLAY */}
+          {/* 5-MIN GAME RUN TIME TIMER DISPLAY */}
           <div className="mb-3.5 flex items-center gap-1.5 px-3 py-1 bg-black/60 border border-zinc-800 rounded-full text-[10px] font-black font-mono tracking-widest text-cyan-400 select-none">
             <Timer className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
             <span>TIMER : {formatTimerValue(timeLeft)} ({matchData.playMode?.toUpperCase() || 'NORMAL'})</span>
           </div>
 
-          {/* EQUATION WORKSPACE BOARD */}
-          <div className="w-full rounded-2xl border border-zinc-800/80 bg-zinc-950/80 p-4 mb-4 shadow-xl relative flex flex-col gap-3">
+          {/* EQUATION WORKSPACE BOARD - HIGH VISIBILITY HUD */}
+          <div className="w-full rounded-2xl border-2 border-cyan-500/40 bg-gradient-to-b from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 p-4 mb-4 shadow-[0_8px_30px_rgba(0,0,0,0.7),0_0_24px_rgba(6,182,212,0.18)] relative flex flex-col gap-3">
             
             {/* OPPONENT EQUATION BOX */}
-            <div className="flex flex-col gap-1.5 pb-2 border-b border-zinc-900">
-              <span className="text-[8px] uppercase font-black tracking-widest text-pink-400 font-mono">Opponent</span>
+            <div className="flex flex-col gap-1.5 pb-2.5 border-b border-white/10">
+              <span className="text-[9px] uppercase font-black tracking-widest text-pink-400 font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"></span>
+                Opponent Workspace
+              </span>
               {renderFormulaBlocks(true)}
             </div>
 
             {/* SHARED TARGET RESULT TARGET */}
-            <div className="flex items-center justify-between px-2 select-none">
-              <span className="text-[8px] uppercase tracking-[0.2em] font-black text-zinc-500 font-sans">
-                Target Result:
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/70 border border-white/10 select-none">
+              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-300 font-sans">
+                TARGET GOAL:
               </span>
-              <span className="text-xl font-black font-mono text-cyan-400 filter drop-shadow-[0_0_6px_#06b6d4]">
-                {matchData.target}
+              <span className="text-2xl font-black font-mono text-cyan-300 filter drop-shadow-[0_0_8px_rgba(6,182,212,0.7)] px-3 py-0.5 rounded-xl bg-cyan-500/20 border border-cyan-400/50">
+                = {matchData.target}
               </span>
             </div>
 
             {/* YOUR EQUATION BOX */}
-            <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
-              <span className="text-[8px] uppercase font-black tracking-widest text-cyan-400 font-mono">You</span>
+            <div className="flex flex-col gap-1.5 pt-2.5 border-t border-white/10">
+              <span className="text-[9px] uppercase font-black tracking-widest text-cyan-400 font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                Your Workspace
+              </span>
               {renderFormulaBlocks(false)}
             </div>
 

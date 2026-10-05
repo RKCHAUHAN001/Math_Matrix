@@ -92,9 +92,9 @@ const getFormulasForScore = (difficulty: 'easy' | 'medium' | 'hard' | 'insane', 
 };
 
 const getPuzzleTimeLimit = (diff: 'easy' | 'medium' | 'hard' | 'insane'): number => {
-  if (diff === 'easy') return 20;
-  if (diff === 'medium') return 30;
-  return 45; // Hard and Insane are 45 seconds per puzzle
+  if (diff === 'easy') return 10;
+  if (diff === 'medium') return 20;
+  return 30; // Hard and Insane are 30 seconds per puzzle
 };
 
 export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({ 
@@ -129,7 +129,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   const [grid, setGrid] = useState<number[]>([]);
   const [score, setScore] = useState<number>(0);
   const [combo, setCombo] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState<number>(20);
+  const [timeLeft, setTimeLeft] = useState<number>(() => getPuzzleTimeLimit(initialDifficulty));
   const [target, setTarget] = useState<number>(0);
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
   const [currentFormula, setCurrentFormula] = useState<FormulaTemplate | null>(null);
@@ -428,24 +428,91 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   const renderFormulaText = () => {
     if (!currentFormula) return null;
 
-    let display = currentFormula.display;
-    const alphabet = ['A', 'B', 'C', 'D'];
-
-    alphabet.forEach((letter, idx) => {
-      if (idx < currentFormula.size) {
-        const replacement = selectedIndices.length > idx 
-          ? `<span class="px-2 py-1 mx-1 rounded border border-zinc-700 font-bold text-white bg-zinc-800 text-xs">${grid[selectedIndices[idx]]}</span>`
-          : `<span class="px-2.5 py-1 mx-1 rounded border-2 border-dashed border-zinc-700 text-xs text-zinc-600 animate-pulse bg-zinc-950/20 font-bold">?</span>`;
-        
-        display = display.replace(`[${letter}]`, replacement);
-      }
-    });
+    // Tokenize into variable slots ([A], [B], etc.) and operators/parentheses
+    const tokens = currentFormula.display
+      .split(/(\[[A-D]\]|[()+\-*/])/g)
+      .map(t => t.trim())
+      .filter(Boolean);
 
     return (
-      <div 
-        className="flex items-center justify-center font-mono py-2 select-none tracking-widest leading-relaxed text-zinc-400"
-        dangerouslySetInnerHTML={{ __html: display }}
-      />
+      <div className="flex flex-wrap items-center justify-center font-mono py-2 px-1 select-none leading-none gap-y-2.5">
+        {tokens.map((token, i) => {
+          // Check if token is a variable slot [A], [B], [C], [D]
+          const match = token.match(/^\[([A-D])\]$/);
+          if (match) {
+            const letter = match[1];
+            const slotIdx = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+            const isFilled = selectedIndices.length > slotIdx;
+
+            if (isFilled) {
+              const val = grid[selectedIndices[slotIdx]];
+              return (
+                <div
+                  key={i}
+                  className="inline-flex items-center justify-center min-w-[42px] h-11 md:min-w-[48px] md:h-12 px-3 mx-1 rounded-2xl border-2 border-emerald-400 bg-gradient-to-b from-emerald-500/35 via-teal-500/25 to-emerald-600/35 text-white font-black text-lg md:text-xl font-mono shadow-[0_0_18px_rgba(16,185,129,0.6)] transform scale-105 transition-all animate-fadeIn"
+                >
+                  {val}
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={i}
+                className="inline-flex items-center justify-center min-w-[42px] h-11 md:min-w-[48px] md:h-12 px-2.5 mx-1 rounded-2xl border-2 border-dashed border-cyan-400 bg-cyan-950/50 text-cyan-300 font-black text-base md:text-lg font-mono shadow-[0_0_16px_rgba(6,182,212,0.45)] animate-pulse"
+              >
+                ?
+              </div>
+            );
+          }
+
+          if (token === '*') {
+            return (
+              <span key={i} className="text-amber-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">
+                ×
+              </span>
+            );
+          }
+
+          if (token === '/') {
+            return (
+              <span key={i} className="text-amber-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">
+                ÷
+              </span>
+            );
+          }
+
+          if (token === '+') {
+            return (
+              <span key={i} className="text-cyan-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+                +
+              </span>
+            );
+          }
+
+          if (token === '-') {
+            return (
+              <span key={i} className="text-rose-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">
+                −
+              </span>
+            );
+          }
+
+          if (token === '(' || token === ')') {
+            return (
+              <span key={i} className="text-yellow-300 font-extrabold text-2xl md:text-3xl mx-0.5 select-none drop-shadow-[0_0_8px_rgba(253,224,71,0.5)]">
+                {token}
+              </span>
+            );
+          }
+
+          return (
+            <span key={i} className="text-white font-bold text-lg mx-0.5">
+              {token}
+            </span>
+          );
+        })}
+      </div>
     );
   };
 
@@ -554,33 +621,54 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
           )}
         </div>
 
-        {/* Equation Formula Header */}
-        <div className={`w-full rounded-xl border ${theme.border} ${theme.cardBg} p-2.5 mb-2 text-center relative`}>
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-900 rounded-b-xl overflow-hidden">
+        {/* High Visibility Equation Formula Card */}
+        <div className="w-full rounded-2xl border-2 border-cyan-500/40 bg-gradient-to-b from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 backdrop-blur-xl p-3 mb-3 shadow-[0_8px_30px_rgba(0,0,0,0.7),0_0_24px_rgba(6,182,212,0.18)] relative overflow-hidden">
+          {/* Top Luminous Timer Progress Bar */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-zinc-900/80 overflow-hidden">
             <div 
               className={`h-full ${
-                timeLeft <= 5 ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-blue-500'
+                timeLeft <= 5 
+                  ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-[0_0_12px_#ef4444]' 
+                  : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]'
               } transition-all duration-300`} 
               style={{ width: `${(timeLeft / currentMaxTime) * 100}%` }}
             />
           </div>
 
-          <div className="flex justify-between items-center mb-1 px-1">
-            <span className="text-[8px] uppercase tracking-widest font-bold text-zinc-500">Equation</span>
-            <span className={`text-[10px] font-black font-mono tracking-wide ${
-              timeLeft <= 5 ? 'text-red-500 animate-pulse font-extrabold' : 'text-blue-400'
-            }`}>
-              {timeLeft}s Left
-            </span>
+          {/* Equation Header Row */}
+          <div className="flex justify-between items-center mb-2 px-1 pt-1.5">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+              <span className="text-[9px] uppercase tracking-[0.25em] font-black text-cyan-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+                EQUATION WORKSPACE
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/70 border border-white/10 shadow-inner">
+              <span className="text-[8px] uppercase tracking-wider text-zinc-400 font-bold">TIME</span>
+              <span className={`text-xs font-black font-mono tracking-wider ${
+                timeLeft <= 5 ? 'text-red-400 animate-pulse font-extrabold' : 'text-cyan-400'
+              }`}>
+                {timeLeft}s
+              </span>
+            </div>
           </div>
 
-          {renderFormulaText()}
+          {/* High Contrast Formula Workspace Container */}
+          <div className="py-2.5 px-2 rounded-xl bg-black/70 border border-white/10 shadow-inner">
+            {renderFormulaText()}
+          </div>
 
-          <div className="flex items-center justify-center gap-2 mt-1.5 border-t border-zinc-900 pt-1.5 select-none">
-            <span className="text-[10px] uppercase font-bold text-zinc-500">Target Result:</span>
-            <span className={`text-lg font-black font-mono ${theme.text} filter drop-shadow-[0_0_4px_currentColor]`}>
-              {target}
+          {/* High Visibility Target Result Callout */}
+          <div className="flex items-center justify-center gap-2.5 mt-2.5 pt-2 border-t border-white/10 select-none">
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-300 drop-shadow-sm">
+              TARGET RESULT
             </span>
+            <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-amber-500/20 border-2 border-amber-400/60 shadow-[0_0_18px_rgba(245,158,11,0.35)]">
+              <span className="text-amber-400 text-lg font-black font-mono">=</span>
+              <span className="text-2xl font-black font-mono text-amber-300 tracking-wider filter drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]">
+                {target}
+              </span>
+            </div>
           </div>
         </div>
 
