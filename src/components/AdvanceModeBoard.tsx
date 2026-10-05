@@ -137,7 +137,7 @@ const generateSolvableEquationAny = (numCount: number) => {
 };
 
 export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExit }) => {
-  const { submitScore } = useFirebase();
+  const { submitScore, addTierPoints } = useFirebase();
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [score, setScore] = useState<number>(0);
@@ -247,6 +247,8 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
       if (evaluated === puzzle.target) {
         sounds.playSuccess();
+        // Advance Mode: 2 points each puzzle
+        addTierPoints(2);
         const scoreGain = 10 + (combo * 2);
         const nextScore = score + scoreGain;
         setScore(nextScore);

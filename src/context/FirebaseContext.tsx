@@ -27,6 +27,7 @@ export interface UserProfile {
   uid: string;
   displayName: string;
   socialLink?: string;
+  tierPoints?: number;
   streak: number;
   lastActiveDate: string; // YYYY-MM-DD
   highScore: number;
@@ -42,6 +43,7 @@ export interface LeaderboardEntry {
   userId: string;
   displayName: string;
   socialLink?: string;
+  tierPoints?: number;
   score: number;
   difficulty: 'easy' | 'medium' | 'hard' | 'insane';
   matrixSize: number;
@@ -61,6 +63,7 @@ interface FirebaseContextType {
   updateProfileNotifications: (enabled: boolean) => Promise<void>;
   updateProfileDisplayName: (newName: string) => Promise<{ success: boolean; recordsUpdated: number; error?: string }>;
   updateProfileSocialLink: (link: string) => Promise<{ success: boolean; recordsUpdated: number }>;
+  addTierPoints: (points: number) => Promise<number>;
   submitScore: (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => Promise<void>;
   getLeaderboard: (difficulty?: LeaderboardEntry['difficulty']) => Promise<LeaderboardEntry[]>;
   localLeaderboard: LeaderboardEntry[];
@@ -236,6 +239,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       uid: 'guest_' + Math.random().toString(36).substring(2, 11),
       displayName: 'Matrix Explorer',
       streak: 1,
+      tierPoints: 0,
       lastActiveDate: today,
       highScore: 0,
       theme: 'matrix',
@@ -278,6 +282,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Compare high score and settings with local to pick the freshest
         const mergedHighScore = Math.max(firestoreProfile.highScore || 0, localProfile?.highScore || 0);
         const mergedStreak = Math.max(firestoreProfile.streak || 0, localProfile?.streak || 0);
+        const mergedTierPoints = Math.max(firestoreProfile.tierPoints || 0, localProfile?.tierPoints || 0);
         
         let resolvedName = firestoreProfile.displayName;
         if (
@@ -293,6 +298,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           displayName: resolvedName || 'Anonymous player',
           highScore: mergedHighScore,
           streak: mergedStreak,
+          tierPoints: mergedTierPoints,
           socialLink: localProfile?.socialLink || firestoreProfile.socialLink || '',
           theme: localProfile?.theme || firestoreProfile.theme || 'matrix',
           biometricsEnabled: localProfile?.biometricsEnabled ?? firestoreProfile.biometricsEnabled ?? false,
@@ -322,6 +328,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           uid: currentUser.uid,
           displayName: resolvedName,
           socialLink: localProfile?.socialLink || '',
+          tierPoints: localProfile?.tierPoints || 0,
           streak: localProfile?.streak || 1,
           lastActiveDate: localProfile?.lastActiveDate || today,
           highScore: localProfile?.highScore || 0,
@@ -430,6 +437,57 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
       }
     }
+  };
+
+  const addTierPoints = async (pointsToAdd: number): Promise<number> => {
+    if (!profile || pointsToAdd <= 0) return profile?.tierPoints || 0;
+    const currentPoints = profile.tierPoints || 0;
+    const newPoints = currentPoints + pointsToAdd;
+
+    const updatedProfile: UserProfile = {
+      ...profile,
+      tierPoints: newPoints,
+      updatedAt: new Date().toISOString()
+    };
+    setProfile(updatedProfile);
+    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+
+    // Also retroactively reflect new tier points in local leaderboard entries for this player
+    const currentUid = user?.uid || profile.uid;
+    const updatedLocal = localLeaderboard.map((item) => {
+      if (item.userId === currentUid || item.displayName === profile.displayName) {
+        return { ...item, tierPoints: newPoints };
+      }
+      return item;
+    });
+    setLocalLeaderboard(updatedLocal);
+    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+
+    if (isOnline && user) {
+      try {
+        const ref = doc(db, 'users', user.uid);
+        await updateDoc(ref, {
+          tierPoints: newPoints,
+          updatedAt: serverTimestamp()
+        });
+
+        // Also update scores with new tier points in background
+        const scoresCol = collection(db, 'scores');
+        const userScoresQuery = query(scoresCol, where('userId', '==', user.uid));
+        const snap = await getDocs(userScoresQuery);
+        snap.forEach(async (docSnapshot) => {
+          try {
+            await updateDoc(doc(db, 'scores', docSnapshot.id), {
+              tierPoints: newPoints
+            });
+          } catch (e) {}
+        });
+      } catch (err) {
+        console.warn("Could not sync tier points to cloud:", err);
+      }
+    }
+
+    return newPoints;
   };
 
   const loginWithGoogle = async () => {
@@ -803,6 +861,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       userId: user?.uid || 'guest_user',
       displayName: profile.displayName,
       socialLink: profile.socialLink || '',
+      tierPoints: profile.tierPoints || 0,
       score,
       difficulty,
       matrixSize,
@@ -823,6 +882,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           userId: user.uid,
           displayName: profile.displayName,
           socialLink: profile.socialLink || null,
+          tierPoints: profile.tierPoints || 0,
           score,
           difficulty,
           matrixSize,
@@ -927,6 +987,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           userId: data.userId,
           displayName: data.displayName,
           socialLink: data.socialLink || '',
+          tierPoints: data.tierPoints || 0,
           score: data.score,
           difficulty: data.difficulty,
           matrixSize: data.matrixSize,
@@ -968,6 +1029,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateProfileNotifications,
       updateProfileDisplayName,
       updateProfileSocialLink,
+      addTierPoints,
       submitScore,
       getLeaderboard,
       localLeaderboard,

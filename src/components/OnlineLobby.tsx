@@ -30,6 +30,7 @@ import {
   Award,
   Swords
 } from 'lucide-react';
+import { PlayerBadge } from './PlayerBadge';
 import { 
   doc, 
   setDoc, 
@@ -215,7 +216,7 @@ interface OnlineLobbyProps {
 }
 
 export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, onClose }) => {
-  const { incrementTrophyDirectly } = useFirebase();
+  const { incrementTrophyDirectly, addTierPoints } = useFirebase();
   const [onlineSubMode, setOnlineSubMode] = useState<'lobby' | 'matchmaking' | 'room_waiting' | 'room_join' | 'game_active' | 'game_over'>('lobby');
   const [roomCodeInput, setRoomCodeInput] = useState<string>('');
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
@@ -372,6 +373,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           if (finalMatch.winnerId === currentUid) {
             sounds.playSuccess();
             incrementTrophyDirectly();
+            addTierPoints(10); // Online Match Win: 10 points
           } else {
             sounds.playFailure();
           }
@@ -446,6 +448,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             if (!trophyAwarded) {
               setTrophyAwarded(true);
               incrementTrophyDirectly();
+              addTierPoints(10); // Online Match Win: 10 points
             }
           } else if (data.winnerId === 'draw') {
             sounds.playSuccess();
@@ -1043,6 +1046,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
         if (resultCheck === matchData.target) {
           sounds.playSuccess();
+          // Play Online: Each puzzle solve: 5 points
+          addTierPoints(5);
           setAdvanceSelections([]);
 
           const isP1 = currentUid === matchData.player1Id;
@@ -1137,6 +1142,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
         if (resultCheck === matchData.target) {
           sounds.playSuccess();
+          // Play Online: Each puzzle solve: 5 points
+          addTierPoints(5);
           setSelectedIndices([]);
           
           const nextPuzzle = generateNewPuzzle();
@@ -1692,6 +1699,9 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               <span className="text-xs font-black text-white truncate max-w-[120px] uppercase font-mono tracking-wider">
                 {currentDisplayName}
               </span>
+              <div className="mt-0.5 mb-0.5">
+                <PlayerBadge points={profile?.tierPoints || 0} size="xs" shortLabel={true} />
+              </div>
               <span className="text-[10px] font-black text-cyan-400 font-mono mt-0.5">
                 {myScore} Solved
               </span>

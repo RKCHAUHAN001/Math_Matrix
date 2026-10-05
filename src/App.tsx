@@ -17,7 +17,8 @@ import {
   WifiOff,
   MapPin,
   Sparkles,
-  AlertTriangle
+  AlertTriangle,
+  Award
 } from 'lucide-react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
@@ -29,6 +30,9 @@ import { OnlineLobby } from './components/OnlineLobby';
 import { ChallengeShare } from './components/ChallengeShare';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { AdMobSimulator } from './components/AdMobSimulator';
+import { PlayerBadge } from './components/PlayerBadge';
+import { TiersModal } from './components/TiersModal';
+import { getTierProgress } from './utils/tiers';
 import { THEMES } from './utils/themes';
 import sounds from './utils/audio';
 import { parseAndValidateSocialUrl, getSocialInfo } from './utils/social';
@@ -67,6 +71,9 @@ function GameDashboard() {
   const [nameUpdateSuccess, setNameUpdateSuccess] = useState<string | null>(null);
   const [nameUpdateError, setNameUpdateError] = useState<string | null>(null);
   const [nameUpdateLoading, setNameUpdateLoading] = useState<boolean>(false);
+
+  // Math Quiz Tiers modal state
+  const [showTiersModal, setShowTiersModal] = useState<boolean>(false);
 
   // Email Account Sync local states
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
@@ -282,28 +289,44 @@ function GameDashboard() {
 
       {/* 2. TOP HEADER ROW (TRANSPARENT BG) */}
       <header className="w-full flex justify-between items-start z-10 shrink-0">
-        {/* Name and Label in top-left */}
-        <div className="flex flex-col">
-          <span className="text-xl font-black tracking-widest text-white leading-none font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            Math Matrix
-          </span>
-          <span className="text-[9px] text-zinc-400 font-medium tracking-wider uppercase mt-1">
-            The Puzzle Game
-          </span>
-        </div>
+        {/* 1 & 2: Show Player Name & Tag/Badge in place of Game Name and Sub Name */}
+        <button
+          onClick={() => { sounds.playClick(); setShowTiersModal(true); }}
+          className="flex flex-col items-start text-left group active:scale-95 transition-all select-none focus:outline-none"
+          title="Open Math Quiz Tiers & Title Progress"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-xl font-black tracking-wide text-white leading-none font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] truncate max-w-[170px] group-hover:text-cyan-300 transition-colors">
+              {profile ? profile.displayName : 'Player'}
+            </span>
+            <span className="text-[10px] text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity">
+              ↗
+            </span>
+          </div>
+          <div className="mt-1.5 flex items-center">
+            <PlayerBadge 
+              points={profile?.tierPoints || 0} 
+              size="sm" 
+              showIcon={true}
+            />
+          </div>
+        </button>
 
         {/* Status badges in top-right */}
         {profile && (
           <div className="flex items-center gap-2">
             <div 
-              className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
+              className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
               title="Daily Streak"
             >
               <Flame className="w-4 h-4 text-amber-500 fill-current" />
               <span className="font-extrabold font-mono text-white">{profile.streak}</span>
             </div>
 
-            <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs">
+            <div 
+              className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
+              title="High Score"
+            >
               <Trophy className="w-4 h-4 text-yellow-500" />
               <span className="font-extrabold font-mono text-yellow-400">{profile.highScore}</span>
             </div>
@@ -1110,6 +1133,15 @@ function GameDashboard() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* 10. MATH QUIZ TIERS & ACHIEVEMENTS MODAL */}
+      {showTiersModal && (
+        <TiersModal
+          currentPoints={profile?.tierPoints || 0}
+          theme={theme}
+          onClose={() => setShowTiersModal(false)}
+        />
       )}
 
     </div>

@@ -106,7 +106,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   isOnlineMode = false,
   initialScore = 0
 }) => {
-  const { submitScore, incrementStreakDirectly } = useFirebase();
+  const { submitScore, incrementStreakDirectly, addTierPoints } = useFirebase();
 
   // Handle active level number
   const [currentLevelNum, setCurrentLevelNum] = useState<number | undefined>(initialLevelNumber);
@@ -369,6 +369,11 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
         if (isLevelMode) {
           handleLevelClearedSuccess();
         } else {
+          // Play offline points:
+          // Easy: 1 pt, Medium: 3 pts, Hard / Insane: 5 pts
+          const ptsEarned = activeDifficulty === 'easy' ? 1 : activeDifficulty === 'medium' ? 3 : 5;
+          addTierPoints(ptsEarned);
+
           // Correct! Refresh board and generate next puzzle with the updated score
           generateBoardAndEquation(nextScore);
         }
@@ -381,6 +386,9 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
   const handleLevelClearedSuccess = () => {
     sounds.playSuccess();
+    
+    // Level: 2 points each level
+    addTierPoints(2);
     
     // Calculate and save 3-Star Rating
     if (currentLevelNum !== undefined) {

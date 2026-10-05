@@ -14,11 +14,13 @@ import {
   Facebook, 
   Linkedin, 
   Youtube, 
-  ExternalLink 
+  ExternalLink,
+  Award
 } from 'lucide-react';
 import { useFirebase, LeaderboardEntry } from '../context/FirebaseContext';
 import { getSocialInfo, SocialInfo } from '../utils/social';
 import sounds from '../utils/audio';
+import { PlayerBadge } from './PlayerBadge';
 
 interface LeaderboardViewProps {
   theme: any;
@@ -189,6 +191,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 <span className="text-[8px] font-black uppercase tracking-wider text-white mt-1.5 truncate w-full group-hover:text-zinc-200">
                   {rank2 ? rank2.displayName : 'Empty Slot'}
                 </span>
+                {rank2 && (
+                  <div className="mt-0.5">
+                    <PlayerBadge points={rank2.tierPoints || 0} size="xs" shortLabel={true} />
+                  </div>
+                )}
                 <span className="text-[7px] font-black text-sky-400 mt-0.5">
                   {rank2 ? `${rank2.score.toLocaleString()} PTS` : '0 PTS'}
                 </span>
@@ -226,10 +233,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 <span className="text-[9px] font-black uppercase tracking-wider text-white mt-2 truncate w-full group-hover:text-yellow-300">
                   {rank1 ? rank1.displayName : 'Empty Slot'}
                 </span>
+                {rank1 && (
+                  <div className="mt-0.5">
+                    <PlayerBadge points={rank1.tierPoints || 0} size="xs" shortLabel={true} />
+                  </div>
+                )}
                 <span className="text-[8px] font-black text-yellow-400 mt-0.5">
                   {rank1 ? `${rank1.score.toLocaleString()} PTS` : '0 PTS'}
                 </span>
-
                 {/* Social Button Badge */}
                 {social1 && (
                   <a
@@ -263,6 +274,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 <span className="text-[8px] font-black uppercase tracking-wider text-white mt-1.5 truncate w-full group-hover:text-orange-300">
                   {rank3 ? rank3.displayName : 'Empty Slot'}
                 </span>
+                {rank3 && (
+                  <div className="mt-0.5">
+                    <PlayerBadge points={rank3.tierPoints || 0} size="xs" shortLabel={true} />
+                  </div>
+                )}
                 <span className="text-[7px] font-black text-orange-400 mt-0.5">
                   {rank3 ? `${rank3.score.toLocaleString()} PTS` : '0 PTS'}
                 </span>
@@ -329,11 +345,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                         👤
                       </div>
 
-                      <span className={`text-[9px] font-semibold tracking-wide uppercase truncate max-w-[95px] ${
+                      <span className={`text-[9px] font-semibold tracking-wide uppercase truncate max-w-[80px] ${
                         isMe ? 'text-emerald-400' : 'text-zinc-300'
                       }`}>
                         {entry.displayName}
                       </span>
+
+                      {/* Player Tier Badge */}
+                      <PlayerBadge points={entry.tierPoints || 0} size="xs" shortLabel={true} />
 
                       {/* Clickable Social Badge */}
                       {social && (
