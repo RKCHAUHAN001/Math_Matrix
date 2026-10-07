@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from '../firebase';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking } from '../utils/rankings';
 
 export interface UserProfile {
   uid: string;
@@ -31,6 +32,8 @@ export interface UserProfile {
   streak: number;
   lastActiveDate: string; // YYYY-MM-DD
   highScore: number;
+  sticks?: number;
+  trophies?: number;
   theme: 'monochrome' | 'oled' | 'matrix' | 'cyberpunk' | 'solarized';
   biometricsEnabled: boolean;
   notificationsEnabled: boolean;
@@ -64,8 +67,11 @@ interface FirebaseContextType {
   updateProfileDisplayName: (newName: string) => Promise<{ success: boolean; recordsUpdated: number; error?: string }>;
   updateProfileSocialLink: (link: string) => Promise<{ success: boolean; recordsUpdated: number }>;
   addTierPoints: (points: number) => Promise<number>;
+  addSticks: (amount?: number) => Promise<number>;
   submitScore: (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => Promise<void>;
   getLeaderboard: (difficulty?: LeaderboardEntry['difficulty']) => Promise<LeaderboardEntry[]>;
+  getStickLeaderboard: () => Promise<TopPlayerEntry[]>;
+  getTrophyLeaderboard: () => Promise<TopPlayerEntry[]>;
   localLeaderboard: LeaderboardEntry[];
   syncPendingData: () => Promise<void>;
   incrementStreakDirectly: () => Promise<void>;
@@ -242,6 +248,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       tierPoints: 0,
       lastActiveDate: today,
       highScore: 0,
+      sticks: 0,
+      trophies: 0,
       theme: 'matrix',
       biometricsEnabled: false,
       notificationsEnabled: true,
@@ -283,6 +291,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mergedHighScore = Math.max(firestoreProfile.highScore || 0, localProfile?.highScore || 0);
         const mergedStreak = Math.max(firestoreProfile.streak || 0, localProfile?.streak || 0);
         const mergedTierPoints = Math.max(firestoreProfile.tierPoints || 0, localProfile?.tierPoints || 0);
+        const mergedSticks = Math.max(firestoreProfile.sticks || 0, localProfile?.sticks || 0);
+        const mergedTrophies = Math.max(firestoreProfile.trophies || 0, localProfile?.trophies || 0, mergedHighScore);
         
         let resolvedName = firestoreProfile.displayName;
         if (
@@ -299,6 +309,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           highScore: mergedHighScore,
           streak: mergedStreak,
           tierPoints: mergedTierPoints,
+          sticks: mergedSticks,
+          trophies: mergedTrophies,
           socialLink: localProfile?.socialLink || firestoreProfile.socialLink || '',
           theme: localProfile?.theme || firestoreProfile.theme || 'matrix',
           biometricsEnabled: localProfile?.biometricsEnabled ?? firestoreProfile.biometricsEnabled ?? false,
@@ -332,6 +344,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           streak: localProfile?.streak || 1,
           lastActiveDate: localProfile?.lastActiveDate || today,
           highScore: localProfile?.highScore || 0,
+          sticks: localProfile?.sticks || 0,
+          trophies: localProfile?.trophies || localProfile?.highScore || 0,
           theme: localProfile?.theme || 'matrix',
           biometricsEnabled: localProfile?.biometricsEnabled || false,
           notificationsEnabled: localProfile?.notificationsEnabled || true,
@@ -418,9 +432,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const incrementTrophyDirectly = async () => {
     if (!profile) return;
+    const nextVal = (profile.trophies ?? profile.highScore ?? 0) + 1;
     const updated: UserProfile = {
       ...profile,
-      highScore: profile.highScore + 1,
+      highScore: nextVal,
+      trophies: nextVal,
       updatedAt: new Date().toISOString()
     };
     setProfile(updated);
@@ -430,13 +446,42 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const ref = doc(db, 'users', user.uid);
         await updateDoc(ref, {
-          highScore: updated.highScore,
+          highScore: nextVal,
+          trophies: nextVal,
           updatedAt: serverTimestamp()
         });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
       }
     }
+  };
+
+  const addSticks = async (count: number = 1): Promise<number> => {
+    if (!profile || count <= 0) return profile?.sticks || 0;
+    const currentSticks = profile.sticks || 0;
+    const newSticks = currentSticks + count;
+
+    const updatedProfile: UserProfile = {
+      ...profile,
+      sticks: newSticks,
+      updatedAt: new Date().toISOString()
+    };
+    setProfile(updatedProfile);
+    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+
+    if (isOnline && user) {
+      try {
+        const ref = doc(db, 'users', user.uid);
+        await updateDoc(ref, {
+          sticks: newSticks,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
+      }
+    }
+
+    return newSticks;
   };
 
   const addTierPoints = async (pointsToAdd: number): Promise<number> => {
@@ -855,10 +900,21 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const submitScore = async (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => {
-    if (!profile) return;
+    if (!profile || score <= 0) return;
+
+    // 1. Check local leaderboard for this difficulty
+    const currentDifficultyScores = localLeaderboard
+      .filter(e => e.difficulty === difficulty)
+      .sort((a, b) => b.score - a.score);
+
+    // If 10 records already exist and this new score does not beat the 10th record, DO NOT save or store it!
+    if (currentDifficultyScores.length >= 10 && score <= currentDifficultyScores[9].score) {
+      console.log(`Score (${score}) does not qualify for Top 10 ${difficulty} records. Discarding.`);
+      return;
+    }
 
     const newScoreEntry: LeaderboardEntry = {
-      userId: user?.uid || 'guest_user',
+      userId: user?.uid || profile.uid || 'guest_user',
       displayName: profile.displayName,
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
@@ -868,16 +924,34 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       createdAt: new Date().toISOString()
     };
 
-    // Save locally
-    const currentLocal = [...localLeaderboard, newScoreEntry]
+    // Keep ONLY top 10 for this difficulty, delete any records pushed to 11+
+    const otherDifficultyScores = localLeaderboard.filter(e => e.difficulty !== difficulty);
+    const updatedDifficultyScores = [...currentDifficultyScores, newScoreEntry]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10); // Sync only top 10 locally too
-    setLocalLeaderboard(currentLocal);
-    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(currentLocal));
+      .slice(0, 10); // Strictly keep ONLY top 10 records!
+
+    const updatedLocal = [...otherDifficultyScores, ...updatedDifficultyScores];
+    setLocalLeaderboard(updatedLocal);
+    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
 
     if (isOnline && user) {
       try {
         const scoresCol = collection(db, 'scores');
+
+        // Check remote scores for this difficulty
+        const qDiff = query(scoresCol, where('difficulty', '==', difficulty));
+        const snapDiff = await getDocs(qDiff);
+        const existingDocs = snapDiff.docs.map(d => ({
+          id: d.id,
+          score: d.data().score || 0
+        })).sort((a, b) => b.score - a.score);
+
+        // If 10 remote records already exist and new score doesn't beat 10th record, do not save!
+        if (existingDocs.length >= 10 && score <= existingDocs[9].score) {
+          console.log(`Cloud score does not beat 10th ${difficulty} record. Discarding.`);
+          return;
+        }
+
         await addDoc(scoresCol, {
           userId: user.uid,
           displayName: profile.displayName,
@@ -889,43 +963,31 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           createdAt: serverTimestamp()
         });
 
-        // Background Trim Engine to guarantee ONLY top 10 exist in Firestore per mode
-        setTimeout(async () => {
-          try {
-            const qAll = query(
-              scoresCol,
-              where('difficulty', '==', difficulty)
-            );
-            const snapAll = await getDocs(qAll);
-            const allDocs = snapAll.docs.map(doc => ({
-              id: doc.id,
-              score: doc.data().score || 0
-            }));
-            
-            allDocs.sort((a, b) => b.score - a.score);
+        // Trim Firestore immediately: delete any records outside Top 10
+        const snapAfter = await getDocs(qDiff);
+        const allAfter = snapAfter.docs.map(doc => ({
+          id: doc.id,
+          score: doc.data().score || 0
+        })).sort((a, b) => b.score - a.score);
 
-            if (allDocs.length > 10) {
-              const toDelete = allDocs.slice(10);
-              const { deleteDoc } = await import('firebase/firestore');
-              for (const docToDelete of toDelete) {
-                await deleteDoc(doc(db, 'scores', docToDelete.id));
-              }
-              console.log(`Trimmed trailing scores. Deleted ${toDelete.length} docs.`);
-            }
-          } catch (cleanErr) {
-            console.error("Score trimmer error: ", cleanErr);
+        if (allAfter.length > 10) {
+          const toDelete = allAfter.slice(10);
+          const { deleteDoc } = await import('firebase/firestore');
+          for (const docToDelete of toDelete) {
+            await deleteDoc(doc(db, 'scores', docToDelete.id)).catch(() => {});
           }
-        }, 800);
+          console.log(`Cleaned up and deleted ${toDelete.length} trailing records outside top 10.`);
+        }
 
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, 'scores');
       }
     } else {
-      // Queue score for later sync
+      // Offline queue: only queue if it qualified for local top 10
       const pending = localStorage.getItem(PENDING_SYNC_KEY);
       const pendingList = pending ? JSON.parse(pending) : [];
       pendingList.push(newScoreEntry);
-      localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pendingList));
+      localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pendingList.slice(-10)));
     }
   };
 
@@ -995,25 +1057,73 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       });
 
-      // Filter by difficulty in js memory to avoid complex compound indexing needs
+      // Filter by difficulty in js memory and guarantee ONLY top 10
       let result = entries;
       if (difficulty) {
         result = entries.filter(e => e.difficulty === difficulty);
       }
-      return result;
+      return result.sort((a, b) => b.score - a.score).slice(0, 10);
     } catch (err) {
       try {
         handleFirestoreError(err, OperationType.LIST, 'scores');
       } catch (wrappedErr) {
         console.error("Leaderboard read error:", wrappedErr);
       }
-      // Return local as backup
+      // Return local as backup (strictly top 10)
       let filtered = [...localLeaderboard];
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
-      return filtered;
+      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
     }
+  };
+
+  const getStickLeaderboard = async (): Promise<TopPlayerEntry[]> => {
+    let cloudUsers: Partial<TopPlayerEntry>[] = [];
+    if (isOnline) {
+      try {
+        const usersCol = collection(db, 'users');
+        const snap = await getDocs(query(usersCol, limit(50)));
+        cloudUsers = snap.docs.map(d => {
+          const dat = d.data();
+          return {
+            userId: d.id,
+            displayName: dat.displayName || 'Player',
+            socialLink: dat.socialLink || '',
+            tierPoints: dat.tierPoints || 0,
+            sticks: dat.streak ?? dat.sticks ?? 0,
+            trophies: dat.highScore ?? dat.trophies ?? 0
+          };
+        });
+      } catch (e) {
+        console.warn("Could not fetch remote users for stick ranking:", e);
+      }
+    }
+    return getTop50StickRanking(profile, cloudUsers);
+  };
+
+  const getTrophyLeaderboard = async (): Promise<TopPlayerEntry[]> => {
+    let cloudUsers: Partial<TopPlayerEntry>[] = [];
+    if (isOnline) {
+      try {
+        const usersCol = collection(db, 'users');
+        const snap = await getDocs(query(usersCol, limit(50)));
+        cloudUsers = snap.docs.map(d => {
+          const dat = d.data();
+          return {
+            userId: d.id,
+            displayName: dat.displayName || 'Player',
+            socialLink: dat.socialLink || '',
+            tierPoints: dat.tierPoints || 0,
+            sticks: dat.streak ?? dat.sticks ?? 0,
+            trophies: dat.highScore ?? dat.trophies ?? 0
+          };
+        });
+      } catch (e) {
+        console.warn("Could not fetch remote users for trophy ranking:", e);
+      }
+    }
+    return getTop50TrophyRanking(profile, cloudUsers);
   };
 
   return (
@@ -1030,8 +1140,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateProfileDisplayName,
       updateProfileSocialLink,
       addTierPoints,
+      addSticks,
       submitScore,
       getLeaderboard,
+      getStickLeaderboard,
+      getTrophyLeaderboard,
       localLeaderboard,
       syncPendingData,
       incrementStreakDirectly,

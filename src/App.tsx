@@ -317,7 +317,7 @@ function GameDashboard() {
           <div className="flex items-center gap-2">
             <div 
               className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
-              title="Daily Streak"
+              title="Sticks (Earned in Advance Mode)"
             >
               <Flame className="w-4 h-4 text-amber-500 fill-current" />
               <span className="font-extrabold font-mono text-white">{profile.streak}</span>
@@ -325,7 +325,7 @@ function GameDashboard() {
 
             <div 
               className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
-              title="High Score"
+              title="Trophies"
             >
               <Trophy className="w-4 h-4 text-yellow-500" />
               <span className="font-extrabold font-mono text-yellow-400">{profile.highScore}</span>

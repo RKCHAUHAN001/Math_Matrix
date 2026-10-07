@@ -16,7 +16,8 @@ import {
   Timer, 
   Sparkles,
   Play,
-  AlertOctagon
+  AlertOctagon,
+  Flame
 } from 'lucide-react';
 import sounds from '../utils/audio';
 import { useFirebase } from '../context/FirebaseContext';
@@ -137,11 +138,12 @@ const generateSolvableEquationAny = (numCount: number) => {
 };
 
 export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExit }) => {
-  const { submitScore, addTierPoints } = useFirebase();
+  const { submitScore, addTierPoints, addSticks, incrementStreakDirectly, profile } = useFirebase();
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [score, setScore] = useState<number>(0);
   const [combo, setCombo] = useState<number>(0);
+  const [runSticks, setRunSticks] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number>(20);
   const [lives, setLives] = useState<number>(3);
   const [muted, setMuted] = useState<boolean>(false);
@@ -247,8 +249,12 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
       if (evaluated === puzzle.target) {
         sounds.playSuccess();
-        // Advance Mode: 2 points each puzzle
+        // Advance Mode: 2 tier points each puzzle
         addTierPoints(2);
+        // Player gets 1 stick for each puzzle solved in Advance Mode!
+        incrementStreakDirectly();
+        addSticks(1);
+        setRunSticks(prev => prev + 1);
         const scoreGain = 10 + (combo * 2);
         const nextScore = score + scoreGain;
         setScore(nextScore);
@@ -275,6 +281,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     sounds.playClick();
     setScore(0);
     setCombo(0);
+    setRunSticks(0);
     setLives(3);
     setGameOver(false);
     setIsPlaying(true);
@@ -317,10 +324,17 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
       {/* GAME RUN STATS BAR */}
       {!gameOver && (
-        <div className="w-full grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-zinc-950/60 border border-zinc-900 mb-4 text-center">
+        <div className="w-full grid grid-cols-4 gap-2 p-2.5 rounded-2xl bg-zinc-950/60 border border-zinc-900 mb-4 text-center items-center shadow-md">
           <div className="flex flex-col">
             <span className="text-[7px] text-zinc-500 uppercase tracking-wider">Score</span>
             <span className="text-sm font-black text-white font-mono">{score}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="text-[7px] text-amber-500 uppercase tracking-wider font-bold">Sticks</span>
+            <span className="text-xs font-black text-amber-400 font-mono flex items-center justify-center gap-1">
+              <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> {(profile?.streak || profile?.sticks || 0)}
+            </span>
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -328,7 +342,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
               {[...Array(3)].map((_, i) => (
                 <Heart 
                   key={i} 
-                  className={`w-4 h-4 ${i < lives ? 'text-red-500 fill-current animate-pulse' : 'text-zinc-800'}`} 
+                  className={`w-3.5 h-3.5 ${i < lives ? 'text-red-500 fill-current animate-pulse' : 'text-zinc-800'}`} 
                 />
               ))}
             </div>
@@ -436,6 +450,12 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
               <div className="flex justify-between">
                 <span className="text-zinc-500">Highest Combo:</span>
                 <span className="text-zinc-300 font-bold">{combo} Max</span>
+              </div>
+              <div className="flex justify-between border-t border-zinc-800/80 pt-1.5 mt-1">
+                <span className="text-amber-400 flex items-center gap-1 font-bold">
+                  <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> Sticks Earned:
+                </span>
+                <span className="text-amber-300 font-bold">+{runSticks} (Total: {profile?.streak || profile?.sticks || 0})</span>
               </div>
             </div>
 

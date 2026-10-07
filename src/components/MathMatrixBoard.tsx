@@ -361,11 +361,6 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
           sounds.playCombo(combo / 3);
         }
 
-        // Increase streak upon solving a puzzle (Only apply to offline mode)
-        if (!isOnlineMode) {
-          incrementStreakDirectly();
-        }
-
         if (isLevelMode) {
           handleLevelClearedSuccess();
         } else {
