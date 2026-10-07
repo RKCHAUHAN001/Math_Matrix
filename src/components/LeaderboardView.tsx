@@ -128,11 +128,18 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
   const myScoreRankIndex = scores.findIndex(p => p.userId === profile?.uid);
   const myScoreRank = myScoreRankIndex !== -1 ? myScoreRankIndex + 1 : null;
 
+  // Determine if the player is already featured in the current leaderboard list
+  const isPlayerInList = rankingType === 'stick' 
+    ? Boolean(myStickRank)
+    : rankingType === 'trophy' 
+    ? Boolean(myTrophyRank)
+    : Boolean(myScoreRank);
+
   return (
     <div className="w-full flex flex-col text-white select-none h-full">
       
       {/* 1. TOP HEADER */}
-      <header className="flex items-center justify-between w-full mb-2 shrink-0 relative z-30">
+      <header className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
         <button 
           onClick={() => { 
             sounds.playClick(); 
@@ -224,61 +231,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
         )}
       </header>
 
-      {/* 2. PLAYER RANKING CARD (ONLY SHOWN FOR STICK & TROPHY RANKINGS) */}
-      {rankingType !== 'score' && (
-        <div className="w-full mb-2 px-3.5 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center justify-between shrink-0 shadow-sm animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">
-              👤
-            </div>
-            <div>
-              <p className="text-[7.5px] uppercase tracking-wider text-zinc-400 font-bold">
-                {isSignedIn ? 'Your Ranking' : 'Account Status'}
-              </p>
-              <p className="text-xs font-black uppercase text-white tracking-wide truncate max-w-[120px]">
-                {isSignedIn ? (profile?.displayName || 'Player') : 'Guest (Not Signed In)'}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-right">
-            <div className="text-xs font-black font-mono flex items-center justify-end gap-1 text-emerald-400">
-              {isSignedIn ? (
-                rankingType === 'stick' ? (
-                  myStickRank ? (
-                    <span>Rank #{myStickRank}</span>
-                  ) : (
-                    <span className="text-zinc-400">Unranked</span>
-                  )
-                ) : (
-                  myTrophyRank ? (
-                    <span>Rank #{myTrophyRank}</span>
-                  ) : (
-                    <span className="text-zinc-400">Unranked</span>
-                  )
-                )
-              ) : (
-                <span className="text-amber-400 text-[10px] font-bold">Sign in to join rank</span>
-              )}
-            </div>
-            <p className="text-[8px] font-bold font-mono text-zinc-400 mt-0.5">
-              {rankingType === 'stick' ? (
-                <span className="text-amber-400 flex items-center gap-0.5 justify-end">
-                  <Flame className="w-2.5 h-2.5 text-amber-500 fill-current inline" />
-                  {(profile?.streak || profile?.sticks || 0)} Sticks
-                </span>
-              ) : (
-                <span className="text-yellow-400 flex items-center gap-0.5 justify-end">
-                  <Trophy className="w-2.5 h-2.5 text-yellow-500 inline" />
-                  {(profile?.highScore || 0)} Trophies
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 3. SIMPLE CONTINUOUS RANKING LIST (TOP 3 ALSO SHOWN IN SAME LIST STYLE) */}
+      {/* 2. SIMPLE CONTINUOUS PROFESSIONAL RANKING LIST */}
       {!isOnline && rankingType === 'score' ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white/5 border border-white/10 rounded-3xl my-auto animate-fadeIn">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -524,6 +477,58 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
               })
             )
           )}
+        </div>
+      )}
+
+      {/* 3. YOUR CURRENT POSITION CARD (DOCKED AT BOTTOM ONLY IF OUTSIDE TOP 50 / TOP 10) */}
+      {!isPlayerInList && (
+        <div className="w-full mt-2 mb-1 px-3 py-2 rounded-xl bg-zinc-900/90 border border-emerald-500/30 backdrop-blur-md flex items-center justify-between shrink-0 shadow-md animate-fadeIn">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Rank Indicator */}
+            <div className="w-5 text-center shrink-0">
+              <span className="text-[9px] font-mono font-bold text-zinc-400">
+                {isSignedIn ? '>50' : '—'}
+              </span>
+            </div>
+
+            {/* Avatar */}
+            <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-[10px] shrink-0">
+              👤
+            </div>
+
+            {/* Name & Status */}
+            <div className="min-w-0 flex items-center gap-1.5">
+              <span className="text-[9.5px] font-black uppercase text-emerald-400 tracking-wide truncate max-w-[90px]">
+                {isSignedIn ? (profile?.displayName || 'You') : 'Guest'} <span className="text-[7.5px] text-zinc-400 font-normal">(You)</span>
+              </span>
+              {profile && <PlayerBadge points={profile.tierPoints || 0} size="xs" shortLabel={true} />}
+            </div>
+          </div>
+
+          {/* Stat / Status */}
+          <div className="shrink-0 ml-1 font-mono text-[10px] font-black text-right">
+            {isSignedIn ? (
+              rankingType === 'stick' ? (
+                <span className="text-amber-400 flex items-center gap-1 justify-end">
+                  <Flame className="w-3 h-3 text-amber-500 fill-current inline" />
+                  {(profile?.streak || profile?.sticks || 0).toLocaleString()}
+                </span>
+              ) : rankingType === 'trophy' ? (
+                <span className="text-yellow-400 flex items-center gap-1 justify-end">
+                  <Trophy className="w-3 h-3 text-yellow-400 inline" />
+                  {(profile?.highScore || 0).toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-sky-400 text-[9px] font-bold">
+                  Personal Best
+                </span>
+              )
+            ) : (
+              <span className="text-amber-400 text-[8px] font-bold">
+                Sign in to rank
+              </span>
+            )}
+          </div>
         </div>
       )}
 
