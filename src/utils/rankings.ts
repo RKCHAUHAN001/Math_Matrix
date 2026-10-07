@@ -18,17 +18,73 @@ export interface TopPlayerEntry {
 }
 
 /**
- * Builds the Stick Ranking list using ONLY original players (no dummy records).
+ * Validates if an account belongs to a real signed-in player rather than an unknown/guest placeholder.
+ */
+export const isRealSignedInPlayer = (userId?: string, displayName?: string): boolean => {
+  if (!userId || !displayName) return false;
+  
+  // 1. Must be a genuine Firebase Auth account ID (not an offline guest or temp ID)
+  const cleanId = userId.trim().toLowerCase();
+  if (
+    cleanId.startsWith('guest') ||
+    cleanId.startsWith('anon') ||
+    cleanId.startsWith('temp') ||
+    cleanId.startsWith('offline') ||
+    cleanId.startsWith('local') ||
+    cleanId === 'current_user' ||
+    cleanId === 'unknown' ||
+    cleanId.length < 8
+  ) {
+    return false;
+  }
+
+  // 2. Validate Display Name: Must be a genuine human username / player name
+  const name = displayName.trim().toLowerCase();
+  if (name.length < 2 || name.length > 30) return false;
+
+  // Reject any name containing placeholder or unknown substrings
+  const blockedSubstrings = [
+    'unknown',
+    'anonymous',
+    'matrix explorer',
+    'unnamed',
+    'guest',
+    'placeholder',
+    'undefined',
+    'null'
+  ];
+
+  for (const blocked of blockedSubstrings) {
+    if (name.includes(blocked)) {
+      return false;
+    }
+  }
+
+  // Reject generic standalone names or number suffixes (e.g. "player", "player 1", "user", "user 1")
+  if (/^player(\s*|\d*|_|-)*$/i.test(name)) return false;
+  if (/^user(\s*|\d*|_|-)*$/i.test(name)) return false;
+  if (/^test(\s*|\d*|_|-)*$/i.test(name)) return false;
+  if (name === 'you' || name === 'me' || name === 'n/a' || name === 'none') return false;
+
+  // Must contain at least one alphanumeric character
+  if (!/[a-z0-9]/i.test(name)) return false;
+
+  return true;
+};
+
+/**
+ * Builds the Stick Ranking list using ONLY real signed-in players.
  */
 export function getTop50StickRanking(
   profile: UserProfile | null,
-  cloudUsers: Partial<TopPlayerEntry>[] = []
+  cloudUsers: Partial<TopPlayerEntry>[] = [],
+  isSignedInUser: boolean = false
 ): TopPlayerEntry[] {
   const map = new Map<string, TopPlayerEntry>();
 
-  // 1. Add genuine cloud users from Firestore
+  // 1. Add genuine signed-in users from Firestore
   cloudUsers.forEach(cu => {
-    if (cu.userId && cu.displayName) {
+    if (cu.userId && cu.displayName && isRealSignedInPlayer(cu.userId, cu.displayName)) {
       map.set(cu.userId, {
         userId: cu.userId,
         displayName: cu.displayName,
@@ -40,12 +96,11 @@ export function getTop50StickRanking(
     }
   });
 
-  // 2. Add or update current original player
-  if (profile) {
-    const userUid = profile.uid || 'current_user';
-    map.set(userUid, {
-      userId: userUid,
-      displayName: profile.displayName || 'You',
+  // 2. Add current player ONLY if she has signed into an account and has a real name
+  if (profile && isSignedInUser && isRealSignedInPlayer(profile.uid, profile.displayName)) {
+    map.set(profile.uid, {
+      userId: profile.uid,
+      displayName: profile.displayName,
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
       sticks: profile.streak || profile.sticks || 0,
@@ -69,17 +124,18 @@ export function getTop50StickRanking(
 }
 
 /**
- * Builds the Trophy Ranking list using ONLY original players (no dummy records).
+ * Builds the Trophy Ranking list using ONLY real signed-in players.
  */
 export function getTop50TrophyRanking(
   profile: UserProfile | null,
-  cloudUsers: Partial<TopPlayerEntry>[] = []
+  cloudUsers: Partial<TopPlayerEntry>[] = [],
+  isSignedInUser: boolean = false
 ): TopPlayerEntry[] {
   const map = new Map<string, TopPlayerEntry>();
 
-  // 1. Add genuine cloud users from Firestore
+  // 1. Add genuine signed-in users from Firestore
   cloudUsers.forEach(cu => {
-    if (cu.userId && cu.displayName) {
+    if (cu.userId && cu.displayName && isRealSignedInPlayer(cu.userId, cu.displayName)) {
       map.set(cu.userId, {
         userId: cu.userId,
         displayName: cu.displayName,
@@ -91,12 +147,11 @@ export function getTop50TrophyRanking(
     }
   });
 
-  // 2. Add or update current original player
-  if (profile) {
-    const userUid = profile.uid || 'current_user';
-    map.set(userUid, {
-      userId: userUid,
-      displayName: profile.displayName || 'You',
+  // 2. Add current player ONLY if she has signed into an account and has a real name
+  if (profile && isSignedInUser && isRealSignedInPlayer(profile.uid, profile.displayName)) {
+    map.set(profile.uid, {
+      userId: profile.uid,
+      displayName: profile.displayName,
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
       sticks: profile.streak || profile.sticks || 0,

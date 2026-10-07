@@ -296,16 +296,24 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         let resolvedName = firestoreProfile.displayName;
         if (
-          (!resolvedName || resolvedName === 'Anonymous player' || resolvedName === 'Matrix Explorer') && 
-          currentUser.displayName && 
+          (!resolvedName || 
+           resolvedName === 'Anonymous player' || 
+           resolvedName === 'Matrix Explorer' || 
+           resolvedName.toLowerCase().includes('unknown')) && 
           !currentUser.isAnonymous
         ) {
-          resolvedName = currentUser.displayName;
+          if (currentUser.displayName) {
+            resolvedName = currentUser.displayName;
+          } else if (currentUser.email) {
+            resolvedName = currentUser.email.split('@')[0];
+          } else if (localProfile?.displayName && !localProfile.displayName.toLowerCase().includes('matrix explorer')) {
+            resolvedName = localProfile.displayName;
+          }
         }
 
         finalProfile = {
           ...firestoreProfile,
-          displayName: resolvedName || 'Anonymous player',
+          displayName: resolvedName || (currentUser.email ? currentUser.email.split('@')[0] : 'Player'),
           highScore: mergedHighScore,
           streak: mergedStreak,
           tierPoints: mergedTierPoints,
@@ -334,7 +342,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else {
         // Profile does not exist in Firestore yet (new user)
         const today = getLocalDateString();
-        const resolvedName = (!currentUser.isAnonymous && currentUser.displayName) || localProfile?.displayName || 'Anonymous player';
+        const resolvedName = (!currentUser.isAnonymous && currentUser.displayName) || 
+          (currentUser.email ? currentUser.email.split('@')[0] : '') ||
+          (localProfile?.displayName && !localProfile.displayName.toLowerCase().includes('matrix explorer') ? localProfile.displayName : 'Player');
 
         finalProfile = {
           uid: currentUser.uid,
@@ -1088,7 +1098,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const dat = d.data();
           return {
             userId: d.id,
-            displayName: dat.displayName || 'Player',
+            displayName: dat.displayName || '',
             socialLink: dat.socialLink || '',
             tierPoints: dat.tierPoints || 0,
             sticks: dat.streak ?? dat.sticks ?? 0,
@@ -1099,7 +1109,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.warn("Could not fetch remote users for stick ranking:", e);
       }
     }
-    return getTop50StickRanking(profile, cloudUsers);
+    const isSignedIn = Boolean(user && !user.isAnonymous);
+    return getTop50StickRanking(profile, cloudUsers, isSignedIn);
   };
 
   const getTrophyLeaderboard = async (): Promise<TopPlayerEntry[]> => {
@@ -1112,7 +1123,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const dat = d.data();
           return {
             userId: d.id,
-            displayName: dat.displayName || 'Player',
+            displayName: dat.displayName || '',
             socialLink: dat.socialLink || '',
             tierPoints: dat.tierPoints || 0,
             sticks: dat.streak ?? dat.sticks ?? 0,
@@ -1123,7 +1134,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.warn("Could not fetch remote users for trophy ranking:", e);
       }
     }
-    return getTop50TrophyRanking(profile, cloudUsers);
+    const isSignedIn = Boolean(user && !user.isAnonymous);
+    return getTop50TrophyRanking(profile, cloudUsers, isSignedIn);
   };
 
   return (

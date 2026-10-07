@@ -23,7 +23,7 @@ import { useFirebase, LeaderboardEntry } from '../context/FirebaseContext';
 import { getSocialInfo, SocialInfo } from '../utils/social';
 import sounds from '../utils/audio';
 import { PlayerBadge } from './PlayerBadge';
-import { TopPlayerEntry } from '../utils/rankings';
+import { TopPlayerEntry, isRealSignedInPlayer } from '../utils/rankings';
 
 interface LeaderboardViewProps {
   theme: any;
@@ -36,8 +36,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
     getStickLeaderboard, 
     getTrophyLeaderboard, 
     isOnline, 
-    profile 
+    profile,
+    user 
   } = useFirebase();
+
+  const isSignedIn = Boolean(user && !user.isAnonymous);
 
   // Mode switcher: 'score' (current ranking), 'stick' (Top 50 Stick Ranking), 'trophy' (Top 50 Trophy Ranking)
   const [rankingType, setRankingType] = useState<'score' | 'stick' | 'trophy'>('score');
@@ -57,6 +60,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
     setLoading(true);
     const data = await getLeaderboard(difficultyFilter);
     const sorted = [...data]
+      .filter(entry => isRealSignedInPlayer(entry.userId, entry.displayName))
       .sort((a, b) => b.score - a.score)
       .slice(0, 10); // Strictly show only Top 10 records
     setScores(sorted);
@@ -228,27 +232,33 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
               👤
             </div>
             <div>
-              <p className="text-[7.5px] uppercase tracking-wider text-zinc-400 font-bold">Your Ranking</p>
+              <p className="text-[7.5px] uppercase tracking-wider text-zinc-400 font-bold">
+                {isSignedIn ? 'Your Ranking' : 'Account Status'}
+              </p>
               <p className="text-xs font-black uppercase text-white tracking-wide truncate max-w-[120px]">
-                {profile?.displayName || 'Player'}
+                {isSignedIn ? (profile?.displayName || 'Player') : 'Guest (Not Signed In)'}
               </p>
             </div>
           </div>
 
           <div className="text-right">
             <div className="text-xs font-black font-mono flex items-center justify-end gap-1 text-emerald-400">
-              {rankingType === 'stick' ? (
-                myStickRank ? (
-                  <span>Rank #{myStickRank}</span>
+              {isSignedIn ? (
+                rankingType === 'stick' ? (
+                  myStickRank ? (
+                    <span>Rank #{myStickRank}</span>
+                  ) : (
+                    <span className="text-zinc-400">Unranked</span>
+                  )
                 ) : (
-                  <span className="text-zinc-400">Unranked</span>
+                  myTrophyRank ? (
+                    <span>Rank #{myTrophyRank}</span>
+                  ) : (
+                    <span className="text-zinc-400">Unranked</span>
+                  )
                 )
               ) : (
-                myTrophyRank ? (
-                  <span>Rank #{myTrophyRank}</span>
-                ) : (
-                  <span className="text-zinc-400">Unranked</span>
-                )
+                <span className="text-amber-400 text-[10px] font-bold">Sign in to join rank</span>
               )}
             </div>
             <p className="text-[8px] font-bold font-mono text-zinc-400 mt-0.5">
@@ -289,7 +299,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
           </button>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-0">
+        <div 
+          className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-0 max-h-[500px] scroll-smooth"
+          style={{ maxHeight: '500px' }}
+        >
           {(rankingType === 'stick' || rankingType === 'trophy') ? (
             /* TOP 50 LIST FOR STICKS / TROPHIES IN SIMPLE UNIFIED LIST */
             loadingTop50 ? (
@@ -305,10 +318,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 <h4 className="text-[11px] font-black uppercase text-white mb-0.5 tracking-wider">
                   {rankingType === 'stick' ? 'No Stick Rankings Yet' : 'No Trophy Rankings Yet'}
                 </h4>
-                <p className="text-[9px] text-zinc-500 uppercase tracking-wider max-w-[200px] leading-relaxed mx-auto">
-                  {rankingType === 'stick' 
-                    ? 'Play Advance Mode to earn sticks and be the first to rank!'
-                    : 'Win matches to earn trophies and be the first to rank!'}
+                <p className="text-[9px] text-zinc-400 uppercase tracking-wider max-w-[220px] leading-relaxed mx-auto">
+                  {isSignedIn 
+                    ? (rankingType === 'stick'
+                        ? 'Solve puzzles in Advance Mode to earn sticks and climb the rankings!'
+                        : 'Win matches to earn trophies and climb the rankings!')
+                    : 'Sign in to your account and play to become the first ranked player!'}
                 </p>
               </div>
             ) : (

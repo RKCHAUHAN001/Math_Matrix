@@ -95,8 +95,7 @@ service cloud.firestore {
 
     // Rules for Users
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId);
-      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow get, list: if true;
       
       allow create: if isSignedIn()
         && isValidId(userId)
