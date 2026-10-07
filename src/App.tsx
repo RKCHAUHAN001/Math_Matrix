@@ -32,6 +32,7 @@ import { PWAInstallButton } from './components/PWAInstallButton';
 import { AdMobSimulator } from './components/AdMobSimulator';
 import { PlayerBadge } from './components/PlayerBadge';
 import { TiersModal } from './components/TiersModal';
+import { SignInView } from './components/SignInView';
 import { getTierProgress } from './utils/tiers';
 import { THEMES } from './utils/themes';
 import sounds from './utils/audio';
@@ -41,6 +42,7 @@ function GameDashboard() {
   const { 
     user, 
     profile, 
+    loading,
     isOnline, 
     loginWithGoogle, 
     loginWithEmail,
@@ -51,6 +53,10 @@ function GameDashboard() {
     clearAuthError,
     localLeaderboard
   } = useFirebase();
+
+  const isSignedIn = Boolean(user && !user.isAnonymous);
+  // Guest bypass allows continuing to explore offline as a guest if user chooses
+  const [guestBypass, setGuestBypass] = useState<boolean>(false);
 
   // Floating Toast state for offline alerts
   const [offlineToast, setOfflineToast] = useState<string | null>(null);
@@ -75,12 +81,8 @@ function GameDashboard() {
   // Math Quiz Tiers modal state
   const [showTiersModal, setShowTiersModal] = useState<boolean>(false);
 
-  // Email Account Sync local states
+  // Sign In / Sync Modal state
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
-  const [syncEmail, setSyncEmail] = useState<string>('');
-  const [syncPassword, setSyncPassword] = useState<string>('');
-  const [syncError, setSyncError] = useState<string | null>(null);
-  const [syncLoading, setSyncLoading] = useState<boolean>(false);
 
   // Unified standard premium theme
   const theme = THEMES.matrix;
@@ -255,6 +257,17 @@ function GameDashboard() {
     setGameOverScore(null);
     setGameActive(true);
   };
+
+  // Wait for initial Firebase auth check before rendering to prevent UI flash
+  if (loading) {
+    return (
+      <div className={`h-screen max-h-screen overflow-hidden flex flex-col justify-center items-center ${theme.bg} text-white select-none relative p-6`}>
+        <div className="w-10 h-10 rounded-full border-2 border-dashed border-cyan-400 animate-spin mb-4" />
+        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-cyan-400">MATH MATRIX</h2>
+        <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1 font-mono">Initializing...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-screen max-h-screen overflow-hidden flex flex-col justify-between ${theme.bg} ${theme.text} ${theme.fontFamily} transition-colors duration-500 relative select-none p-6`}>
@@ -683,6 +696,7 @@ function GameDashboard() {
                           return;
                         }
                         await logout();
+                        setGuestBypass(false); // Reset guest bypass to immediately redirect to sign-in page
                         sounds.playSuccess();
                         setActiveOverlay('none');
                       }}
@@ -998,141 +1012,21 @@ function GameDashboard() {
         </div>
       )}
 
-      {/* CLOUD SYNC OPTION SELECTION MODAL */}
-      {showSyncModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn text-white select-none">
-          <div className="max-w-sm w-full rounded-3xl bg-zinc-950 border border-blue-500/30 p-6 shadow-2xl relative text-center">
-            <button 
-              onClick={() => {
-                sounds.playClick();
-                setShowSyncModal(false);
-                setSyncError(null);
-              }}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3 mx-auto">
-              <Sparkles className="w-6 h-6 text-blue-400" />
-            </div>
-
-            <h3 className="text-sm font-black tracking-widest text-blue-400 uppercase mb-1">
-              Sync Game Progress
-            </h3>
-            <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-4">
-              Backup scores & unlock multiplayer
-            </p>
-
-            {/* ERROR DISPLAY */}
-            {syncError && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-[10px] text-left leading-normal mb-4 font-semibold">
-                {syncError}
-              </div>
-            )}
-
-            {/* FORM 1: NATIVE CRASH-PROOF EMAIL SYNC */}
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              sounds.playClick();
-              if (!isOnline) {
-                sounds.playFailure();
-                setSyncError("No Internet Connection. Connect to the internet to sign in.");
-                return;
-              }
-              if (!syncEmail || !syncPassword) {
-                setSyncError("Please fill out both email and password.");
-                return;
-              }
-              setSyncLoading(true);
-              setSyncError(null);
-              try {
-                await loginWithEmail(syncEmail.trim(), syncPassword);
-                sounds.playSuccess();
-                setShowSyncModal(false);
-                setActiveOverlay('none');
-              } catch (err: any) {
-                setSyncError(err.message || "Failed to sync with email.");
-              } finally {
-                setSyncLoading(false);
-              }
-            }} className="space-y-2.5 text-left mb-5">
-              <div>
-                <label className="text-[8px] font-black uppercase tracking-widest text-zinc-400 block mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={syncEmail}
-                  onChange={(e) => setSyncEmail(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
-                  placeholder="name@example.com"
-                />
-              </div>
-              <div>
-                <label className="text-[8px] font-black uppercase tracking-widest text-zinc-400 block mb-1">Password (Min 6 chars)</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={syncPassword}
-                  onChange={(e) => setSyncPassword(e.target.value)}
-                  className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
-                  placeholder="••••••"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={syncLoading}
-                className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                {syncLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  "Backup & Sync Now"
-                )}
-              </button>
-            </form>
-
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-white/5"></div>
-              <span className="flex-shrink mx-3 text-[8px] font-black uppercase tracking-widest text-zinc-500">OR</span>
-              <div className="flex-grow border-t border-white/5"></div>
-            </div>
-
-            {/* BUTTON 2: NATIVE GOOGLE PROMPT */}
-            <button
-              type="button"
-              onClick={async () => {
-                sounds.playClick();
-                if (!isOnline) {
-                  sounds.playFailure();
-                  setSyncError("No Internet Connection. Connect to the internet to sign in with Google.");
-                  return;
-                }
-                setSyncLoading(true);
-                setSyncError(null);
-                try {
-                  await loginWithGoogle();
-                  sounds.playSuccess();
-                  setShowSyncModal(false);
-                  setActiveOverlay('none');
-                } catch (err: any) {
-                  setSyncError("Google Authentication Fail");
-                } finally {
-                  setSyncLoading(false);
-                }
-              }}
-              disabled={syncLoading}
-              className="mt-3 w-full py-2.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 disabled:opacity-50 text-zinc-200 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Globe className="w-3.5 h-3.5 text-zinc-400" />
-              Sign in with Google
-            </button>
-            <p className="text-[8px] text-zinc-500 mt-2 leading-relaxed">
-              * Email Sync is 100% crash-proof and works natively on all Android APKs. Google Sign-In requires configured Google Play Services.
-            </p>
-          </div>
-        </div>
+      {/* SIGN IN / LOGIN PAGE (SHOWN TO NEW PLAYERS ON GAME LAUNCH, OR WHEN SIGNED OUT, OR VIA SYNC CLOUD) */}
+      {((!isSignedIn && !guestBypass) || showSyncModal) && (
+        <SignInView
+          theme={theme}
+          canDismiss={isSignedIn || guestBypass}
+          onClose={() => setShowSyncModal(false)}
+          onSuccess={() => {
+            setShowSyncModal(false);
+            setGuestBypass(false);
+          }}
+          onContinueAsGuest={() => {
+            setGuestBypass(true);
+            setShowSyncModal(false);
+          }}
+        />
       )}
 
       {/* 10. MATH QUIZ TIERS & ACHIEVEMENTS MODAL */}
