@@ -18,11 +18,12 @@ import {
   limit, 
   where,
   serverTimestamp,
-  getDocFromServer
+  getDocFromServer,
+  deleteDoc
 } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from '../firebase';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking, buildTop10ScoreRanking } from '../utils/rankings';
+import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking } from '../utils/rankings';
 
 export interface UserProfile {
   uid: string;
@@ -390,6 +391,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       setProfile(finalProfile);
       localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(finalProfile));
+      syncPendingData();
     } catch (error) {
       console.error("Error loading or syncing profile, falling back to guest profile:", error);
       loadGuestProfile();
@@ -959,20 +961,42 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const submitScore = async (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => {
     if (!profile || score <= 0) return;
 
-    // 1. Check local leaderboard for this difficulty
-    const currentDifficultyScores = localLeaderboard
-      .filter(e => e.difficulty === difficulty)
-      .sort((a, b) => b.score - a.score);
+    const currentUid = user?.uid || profile.uid || 'guest_user';
+    const isNewHighScore = score > (profile.highScore || 0);
+    const updatedHighScore = Math.max(score, profile.highScore || 0);
 
-    // If 10 records already exist and this new score does not beat the 10th record, DO NOT save or store it!
-    if (currentDifficultyScores.length >= 10 && score <= currentDifficultyScores[9].score) {
-      console.log(`Score (${score}) does not qualify for Top 10 ${difficulty} records. Discarding.`);
-      return;
+    // 1. Update in-memory profile and localStorage profile with high score
+    if (isNewHighScore) {
+      setProfile(prev => {
+        if (!prev) return prev;
+        const updated: UserProfile = {
+          ...prev,
+          highScore: updatedHighScore,
+          trophies: Math.max(prev.trophies || 0, updatedHighScore),
+          updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+        return updated;
+      });
+
+      // If online and authenticated, update user profile document in Firestore
+      if (isOnline && user) {
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          await updateDoc(userDocRef, {
+            highScore: updatedHighScore,
+            trophies: updatedHighScore,
+            updatedAt: serverTimestamp()
+          });
+        } catch (err) {
+          console.warn("Could not update user high score in Firestore users collection:", err);
+        }
+      }
     }
 
     const newScoreEntry: LeaderboardEntry = {
-      userId: user?.uid || profile.uid || 'guest_user',
-      displayName: profile.displayName,
+      userId: currentUid,
+      displayName: profile.displayName || 'Player',
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
       score,
@@ -981,70 +1005,62 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       createdAt: new Date().toISOString()
     };
 
-    // Keep ONLY top 10 for this difficulty, delete any records pushed to 11+
-    const otherDifficultyScores = localLeaderboard.filter(e => e.difficulty !== difficulty);
-    const updatedDifficultyScores = [...currentDifficultyScores, newScoreEntry]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10); // Strictly keep ONLY top 10 records!
+    // 2. Update local leaderboard: maintain the player's best scores
+    setLocalLeaderboard(prev => {
+      const otherScores = prev.filter(e => !(e.userId === currentUid && e.difficulty === difficulty));
+      const existingUserDiffScore = prev.find(e => e.userId === currentUid && e.difficulty === difficulty);
+      const bestScore = existingUserDiffScore ? Math.max(existingUserDiffScore.score, score) : score;
+      const updated = [...otherScores, { ...newScoreEntry, score: bestScore }].sort((a, b) => b.score - a.score);
+      localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
-    const updatedLocal = [...otherDifficultyScores, ...updatedDifficultyScores];
-    setLocalLeaderboard(updatedLocal);
-    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
-
+    // 3. Upload to Firestore scores collection
     if (isOnline && user) {
       try {
         const scoresCol = collection(db, 'scores');
 
-        // Check remote scores for this difficulty
-        const qDiff = query(scoresCol, where('difficulty', '==', difficulty));
-        const snapDiff = await getDocs(qDiff);
-        const existingDocs = snapDiff.docs.map(d => ({
-          id: d.id,
-          score: d.data().score || 0
-        })).sort((a, b) => b.score - a.score);
+        // Query all previous score records for this user
+        const qUser = query(scoresCol, where('userId', '==', user.uid));
+        const snapUser = await getDocs(qUser);
+        const existingDiffDocs = snapUser.docs.filter(d => d.data().difficulty === difficulty);
+        const currentMaxScore = existingDiffDocs.reduce((max, d) => Math.max(max, d.data().score || 0), 0);
 
-        // If 10 remote records already exist and new score doesn't beat 10th record, do not save!
-        if (existingDocs.length >= 10 && score <= existingDocs[9].score) {
-          console.log(`Cloud score does not beat 10th ${difficulty} record. Discarding.`);
-          return;
-        }
-
-        await addDoc(scoresCol, {
-          userId: user.uid,
-          displayName: profile.displayName,
-          socialLink: profile.socialLink || null,
-          tierPoints: profile.tierPoints || 0,
-          score,
-          difficulty,
-          matrixSize,
-          createdAt: serverTimestamp()
-        });
-
-        // Trim Firestore immediately: delete any records outside Top 10
-        const snapAfter = await getDocs(qDiff);
-        const allAfter = snapAfter.docs.map(doc => ({
-          id: doc.id,
-          score: doc.data().score || 0
-        })).sort((a, b) => b.score - a.score);
-
-        if (allAfter.length > 10) {
-          const toDelete = allAfter.slice(10);
-          const { deleteDoc } = await import('firebase/firestore');
-          for (const docToDelete of toDelete) {
-            await deleteDoc(doc(db, 'scores', docToDelete.id)).catch(() => {});
+        if (existingDiffDocs.length === 0 || score > currentMaxScore) {
+          // Delete old lower score documents for this difficulty
+          for (const oldDoc of existingDiffDocs) {
+            await deleteDoc(doc(db, 'scores', oldDoc.id)).catch(() => {});
           }
-          console.log(`Cleaned up and deleted ${toDelete.length} trailing records outside top 10.`);
-        }
 
+          // Write new high score document to Firestore scores collection
+          await addDoc(scoresCol, {
+            userId: user.uid,
+            displayName: profile.displayName || 'Player',
+            socialLink: profile.socialLink || null,
+            tierPoints: profile.tierPoints || 0,
+            score,
+            difficulty,
+            matrixSize,
+            createdAt: serverTimestamp()
+          });
+        }
       } catch (err) {
+        console.error("Failed to upload score to Firestore scores collection:", err);
         handleFirestoreError(err, OperationType.CREATE, 'scores');
       }
     } else {
-      // Offline queue: only queue if it qualified for local top 10
-      const pending = localStorage.getItem(PENDING_SYNC_KEY);
-      const pendingList = pending ? JSON.parse(pending) : [];
-      pendingList.push(newScoreEntry);
-      localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pendingList.slice(-10)));
+      // Offline / guest queue: store in PENDING_SYNC_KEY to upload as soon as connected or logged in
+      try {
+        const pending = localStorage.getItem(PENDING_SYNC_KEY);
+        const pendingList: LeaderboardEntry[] = pending ? JSON.parse(pending) : [];
+        const otherPending = pendingList.filter(p => p.difficulty !== difficulty);
+        const existingPending = pendingList.find(p => p.difficulty === difficulty);
+        const bestPending = existingPending ? Math.max(existingPending.score, score) : score;
+        otherPending.push({ ...newScoreEntry, score: bestPending });
+        localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(otherPending));
+      } catch (e) {
+        console.warn("Could not queue pending score:", e);
+      }
     }
   };
 
@@ -1058,41 +1074,82 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (pendingList.length === 0) return;
 
       const scoresCol = collection(db, 'scores');
+      const qUser = query(scoresCol, where('userId', '==', user.uid));
+      const snapUser = await getDocs(qUser);
+
+      let highestPending = 0;
+
       for (const entry of pendingList) {
-        await addDoc(scoresCol, {
-          userId: user.uid,
-          displayName: profile?.displayName || user.displayName || 'Player',
-          socialLink: profile?.socialLink || null,
-          score: entry.score,
-          difficulty: entry.difficulty,
-          matrixSize: entry.matrixSize,
-          createdAt: serverTimestamp()
+        if (entry.score > highestPending) {
+          highestPending = entry.score;
+        }
+
+        const existingDiffDocs = snapUser.docs.filter(d => d.data().difficulty === entry.difficulty);
+        const currentMaxScore = existingDiffDocs.reduce((max, d) => Math.max(max, d.data().score || 0), 0);
+
+        if (existingDiffDocs.length === 0 || entry.score > currentMaxScore) {
+          for (const oldDoc of existingDiffDocs) {
+            await deleteDoc(doc(db, 'scores', oldDoc.id)).catch(() => {});
+          }
+
+          await addDoc(scoresCol, {
+            userId: user.uid,
+            displayName: profile?.displayName || user.displayName || 'Player',
+            socialLink: profile?.socialLink || null,
+            tierPoints: profile?.tierPoints || entry.tierPoints || 0,
+            score: entry.score,
+            difficulty: entry.difficulty,
+            matrixSize: entry.matrixSize,
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+
+      // Update user profile in state and Firestore if pending beat previous high score
+      if (highestPending > (profile?.highScore || 0)) {
+        setProfile(prev => {
+          if (!prev) return prev;
+          const updated = {
+            ...prev,
+            highScore: Math.max(prev.highScore || 0, highestPending),
+            trophies: Math.max(prev.trophies || 0, highestPending)
+          };
+          localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+          return updated;
         });
+
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
+          highScore: highestPending,
+          trophies: highestPending,
+          updatedAt: serverTimestamp()
+        }).catch(() => {});
       }
 
       // Clear pending
       localStorage.removeItem(PENDING_SYNC_KEY);
-      console.log('Synchronized offline high scores with the cloud leaderboard successfully.');
+      console.log('Synchronized offline high scores with the cloud database successfully.');
     } catch (e) {
       console.error('Failed to sync pending scores:', e);
     }
   };
 
   const getLeaderboard = async (difficulty?: LeaderboardEntry['difficulty']): Promise<LeaderboardEntry[]> => {
-    const diff: 'easy' | 'medium' | 'hard' = (difficulty === 'medium' || difficulty === 'hard') ? difficulty : 'easy';
-
     if (!isOnline) {
-      return buildTop10ScoreRanking(localLeaderboard, diff);
+      // Filter local leaderboard by difficulty
+      let filtered = [...localLeaderboard];
+      if (difficulty) {
+        filtered = filtered.filter(e => e.difficulty === difficulty);
+      }
+      return filtered;
     }
 
     try {
       const scoresCol = collection(db, 'scores');
-      // Query specifically by the selected difficulty with a healthy limit
-      const q = query(
-        scoresCol, 
-        where('difficulty', '==', diff),
-        limit(50)
-      );
+      // Query specific difficulty to avoid hard-mode scores crowding out easy/medium scores
+      const q = difficulty 
+        ? query(scoresCol, where('difficulty', '==', difficulty), limit(50))
+        : query(scoresCol, orderBy('score', 'desc'), limit(50));
       
       const querySnap = await getDocs(q);
       const entries: LeaderboardEntry[] = [];
@@ -1111,16 +1168,20 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       });
 
-      // Merge remote scores with local leaderboard scores and benchmark champions
-      const combined = [...entries, ...localLeaderboard];
-      return buildTop10ScoreRanking(combined, diff);
+      // Sort descending and return top 10 for this difficulty
+      return entries.sort((a, b) => b.score - a.score).slice(0, 10);
     } catch (err) {
       try {
         handleFirestoreError(err, OperationType.LIST, 'scores');
       } catch (wrappedErr) {
         console.error("Leaderboard read error:", wrappedErr);
       }
-      return buildTop10ScoreRanking(localLeaderboard, diff);
+      // Return local as backup (strictly top 10)
+      let filtered = [...localLeaderboard];
+      if (difficulty) {
+        filtered = filtered.filter(e => e.difficulty === difficulty);
+      }
+      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
     }
   };
 
