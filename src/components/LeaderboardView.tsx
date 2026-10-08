@@ -487,7 +487,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             {/* Rank Indicator */}
             <div className="w-5 text-center shrink-0">
               <span className="text-[9px] font-mono font-bold text-zinc-500">
-                {isSignedIn ? '>50' : '—'}
+                {isSignedIn ? (rankingType === 'score' ? '>10' : '>50') : '—'}
               </span>
             </div>
 

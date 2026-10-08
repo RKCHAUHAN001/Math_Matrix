@@ -917,9 +917,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .filter(e => e.difficulty === difficulty)
       .sort((a, b) => b.score - a.score);
 
-    // If 10 records already exist and this new score does not beat the 10th record, DO NOT save or store it!
-    if (currentDifficultyScores.length >= 10 && score <= currentDifficultyScores[9].score) {
-      console.log(`Score (${score}) does not qualify for Top 10 ${difficulty} records. Discarding.`);
+    // Keep top 25 records locally per difficulty so top 10 is always available
+    if (currentDifficultyScores.length >= 25 && score <= currentDifficultyScores[24].score) {
+      console.log(`Score (${score}) does not qualify for Top ${difficulty} records. Discarding.`);
       return;
     }
 
@@ -934,11 +934,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       createdAt: new Date().toISOString()
     };
 
-    // Keep ONLY top 10 for this difficulty, delete any records pushed to 11+
     const otherDifficultyScores = localLeaderboard.filter(e => e.difficulty !== difficulty);
     const updatedDifficultyScores = [...currentDifficultyScores, newScoreEntry]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10); // Strictly keep ONLY top 10 records!
+      .slice(0, 25);
 
     const updatedLocal = [...otherDifficultyScores, ...updatedDifficultyScores];
     setLocalLeaderboard(updatedLocal);
@@ -948,7 +947,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const scoresCol = collection(db, 'scores');
 
-        // Check remote scores for this difficulty
+        // Check remote scores specifically for this difficulty
         const qDiff = query(scoresCol, where('difficulty', '==', difficulty));
         const snapDiff = await getDocs(qDiff);
         const existingDocs = snapDiff.docs.map(d => ({
@@ -956,9 +955,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           score: d.data().score || 0
         })).sort((a, b) => b.score - a.score);
 
-        // If 10 remote records already exist and new score doesn't beat 10th record, do not save!
-        if (existingDocs.length >= 10 && score <= existingDocs[9].score) {
-          console.log(`Cloud score does not beat 10th ${difficulty} record. Discarding.`);
+        // Keep up to 25 records per difficulty in Firestore to ensure top 10 verified players
+        if (existingDocs.length >= 25 && score <= existingDocs[24].score) {
+          console.log(`Cloud score does not beat 25th ${difficulty} record. Discarding.`);
           return;
         }
 
@@ -973,20 +972,20 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           createdAt: serverTimestamp()
         });
 
-        // Trim Firestore immediately: delete any records outside Top 10
+        // Trim Firestore immediately if exceeding 25 records for this difficulty
         const snapAfter = await getDocs(qDiff);
         const allAfter = snapAfter.docs.map(doc => ({
           id: doc.id,
           score: doc.data().score || 0
         })).sort((a, b) => b.score - a.score);
 
-        if (allAfter.length > 10) {
-          const toDelete = allAfter.slice(10);
+        if (allAfter.length > 25) {
+          const toDelete = allAfter.slice(25);
           const { deleteDoc } = await import('firebase/firestore');
           for (const docToDelete of toDelete) {
             await deleteDoc(doc(db, 'scores', docToDelete.id)).catch(() => {});
           }
-          console.log(`Cleaned up and deleted ${toDelete.length} trailing records outside top 10.`);
+          console.log(`Cleaned up and deleted ${toDelete.length} trailing records.`);
         }
 
       } catch (err) {
@@ -1038,17 +1037,18 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
-      return filtered;
+      return filtered.sort((a, b) => b.score - a.score);
     }
 
     try {
       const scoresCol = collection(db, 'scores');
-      // Set query order
-      const q = query(
-        scoresCol, 
-        orderBy('score', 'desc'), 
-        limit(20)
-      );
+      // Query specifically by difficulty so all top 10 records for easy, medium, or hard are retrieved
+      let q;
+      if (difficulty) {
+        q = query(scoresCol, where('difficulty', '==', difficulty), limit(50));
+      } else {
+        q = query(scoresCol, limit(50));
+      }
       
       const querySnap = await getDocs(q);
       const entries: LeaderboardEntry[] = [];
@@ -1067,24 +1067,24 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       });
 
-      // Filter by difficulty in js memory and guarantee ONLY top 10
+      // Filter by difficulty in js memory (in case difficulty was undefined)
       let result = entries;
       if (difficulty) {
         result = entries.filter(e => e.difficulty === difficulty);
       }
-      return result.sort((a, b) => b.score - a.score).slice(0, 10);
+      return result.sort((a, b) => b.score - a.score);
     } catch (err) {
       try {
         handleFirestoreError(err, OperationType.LIST, 'scores');
       } catch (wrappedErr) {
         console.error("Leaderboard read error:", wrappedErr);
       }
-      // Return local as backup (strictly top 10)
+      // Return local as backup
       let filtered = [...localLeaderboard];
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
-      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
+      return filtered.sort((a, b) => b.score - a.score);
     }
   };
 
