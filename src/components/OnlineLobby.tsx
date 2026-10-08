@@ -1223,19 +1223,19 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       if (activeNumCount >= 5) activeNums.push(matchData.advanceE);
 
       return (
-        <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-white text-base py-1 leading-none select-none">
+        <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-zinc-900 text-base py-1 leading-none select-none">
           {activeNums.map((num, idx) => {
             const sel = selections[idx] !== undefined ? selections[idx] : null;
             return (
               <React.Fragment key={idx}>
-                <span className="font-black text-white text-lg md:text-xl drop-shadow-sm">{num}</span>
+                <span className="font-black text-zinc-900 text-lg md:text-xl">{num}</span>
                 {idx < activeNums.length - 1 && (
                   <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl border-2 flex items-center justify-center text-base font-black transition-all ${
                     sel 
                       ? (isOpponent 
-                          ? 'border-pink-400 bg-pink-500/30 text-pink-200 shadow-[0_0_12px_rgba(244,114,182,0.5)]' 
-                          : 'border-cyan-400 bg-cyan-500/30 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.5)]') 
-                      : 'border-dashed border-cyan-400/80 text-cyan-300 animate-pulse bg-cyan-950/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                          ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-sm' 
+                          : 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm') 
+                      : 'border-dashed border-zinc-400 text-zinc-500 animate-pulse bg-zinc-100 shadow-sm'
                   }`}>
                     {sel || '?'}
                   </div>
@@ -1251,7 +1251,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       const alphabet = ['A', 'B', 'C'];
 
       return (
-        <div className="flex items-center justify-center gap-2 font-mono text-white">
+        <div className="flex items-center justify-center gap-2 font-mono text-zinc-900">
           {alphabet.map((letter, idx) => {
             if (idx >= matchData.formulaSize) return null;
 
@@ -1263,16 +1263,16 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                 <div className={`w-10 h-10 md:w-11 md:h-11 rounded-2xl border-2 flex items-center justify-center text-base font-black transition-all ${
                   isFilled 
                     ? (isOpponent 
-                        ? 'border-pink-400 bg-pink-500/30 text-pink-200 shadow-[0_0_14px_rgba(244,114,182,0.5)]' 
-                        : 'border-emerald-400 bg-emerald-500/30 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.5)]')
-                    : 'border-dashed border-cyan-400/80 text-cyan-300 animate-pulse bg-cyan-950/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                        ? 'border-pink-500 bg-pink-50 text-pink-700 shadow-sm' 
+                        : 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm')
+                    : 'border-dashed border-zinc-400 text-zinc-500 animate-pulse bg-zinc-100 shadow-sm'
                 }`}>
                   {isFilled ? selectionValue : '?'}
                 </div>
 
-                {idx === 0 && <span className="text-amber-400 text-xl font-black font-sans mx-1">×</span>}
+                {idx === 0 && <span className="text-amber-600 text-xl font-black font-sans mx-1">×</span>}
                 {idx === 1 && (
-                  <span className={`${display.includes('-') ? 'text-rose-400' : 'text-cyan-400'} text-xl font-black font-sans mx-1`}>
+                  <span className={`${display.includes('-') ? 'text-rose-600' : 'text-blue-600'} text-xl font-black font-sans mx-1`}>
                     {display.includes('-') ? '−' : '+'}
                   </span>
                 )}
@@ -1728,37 +1728,37 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           </div>
 
           {/* 5-MIN GAME RUN TIME TIMER DISPLAY */}
-          <div className="mb-3.5 flex items-center gap-1.5 px-3 py-1 bg-black/60 border border-zinc-800 rounded-full text-[10px] font-black font-mono tracking-widest text-cyan-400 select-none">
-            <Timer className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+          <div className="mb-3.5 flex items-center gap-1.5 px-3 py-1 bg-white border border-zinc-200 rounded-full text-[10px] font-black font-mono tracking-widest text-blue-600 shadow-sm select-none">
+            <Timer className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
             <span>TIMER : {formatTimerValue(timeLeft)} ({matchData.playMode?.toUpperCase() || 'NORMAL'})</span>
           </div>
 
           {/* EQUATION WORKSPACE BOARD - HIGH VISIBILITY HUD */}
-          <div className="w-full rounded-2xl border-2 border-cyan-500/40 bg-gradient-to-b from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 p-4 mb-4 shadow-[0_8px_30px_rgba(0,0,0,0.7),0_0_24px_rgba(6,182,212,0.18)] relative flex flex-col gap-3">
+          <div className="w-full rounded-2xl border border-zinc-200/90 bg-[#f7f7f7] p-4 mb-4 shadow-sm relative flex flex-col gap-3 text-zinc-900">
             
             {/* OPPONENT EQUATION BOX */}
-            <div className="flex flex-col gap-1.5 pb-2.5 border-b border-white/10">
-              <span className="text-[9px] uppercase font-black tracking-widest text-pink-400 font-mono flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"></span>
+            <div className="flex flex-col gap-1.5 pb-2.5 border-b border-zinc-200/80">
+              <span className="text-[9px] uppercase font-black tracking-widest text-pink-600 font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse"></span>
                 Opponent Workspace
               </span>
               {renderFormulaBlocks(true)}
             </div>
 
             {/* SHARED TARGET RESULT TARGET */}
-            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-black/70 border border-white/10 select-none">
-              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-300 font-sans">
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-white border border-zinc-200 shadow-sm select-none">
+              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-500 font-sans">
                 TARGET GOAL:
               </span>
-              <span className="text-2xl font-black font-mono text-cyan-300 filter drop-shadow-[0_0_8px_rgba(6,182,212,0.7)] px-3 py-0.5 rounded-xl bg-cyan-500/20 border border-cyan-400/50">
+              <span className="text-2xl font-black font-mono text-blue-600 px-3 py-0.5 rounded-xl bg-blue-50 border border-blue-200">
                 = {matchData.target}
               </span>
             </div>
 
             {/* YOUR EQUATION BOX */}
-            <div className="flex flex-col gap-1.5 pt-2.5 border-t border-white/10">
-              <span className="text-[9px] uppercase font-black tracking-widest text-cyan-400 font-mono flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <div className="flex flex-col gap-1.5 pt-2.5 border-t border-zinc-200/80">
+              <span className="text-[9px] uppercase font-black tracking-widest text-blue-600 font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                 Your Workspace
               </span>
               {renderFormulaBlocks(false)}
@@ -1770,13 +1770,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           <div className="w-full">
             {matchData.playMode === 'advance' ? (
               /* ADVANCE MULTIPLAYER OPERATOR SELECTION KEYS */
-              <div className="grid grid-cols-4 gap-3 bg-black/65 border border-zinc-900/80 p-3.5 rounded-2xl select-none">
+              <div className="grid grid-cols-4 gap-3 bg-white border border-zinc-200/90 p-3.5 rounded-2xl shadow-sm select-none">
                 {OPERATORS.map((op, opIdx) => {
                   return (
                     <button
                       key={op}
                       onClick={() => handleCellClick(opIdx, op)}
-                      className="aspect-square rounded-2xl bg-zinc-950 border border-zinc-800 hover:border-cyan-500 hover:text-cyan-400 text-white font-black text-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all font-mono"
+                      className="aspect-square rounded-2xl bg-[#f7f7f7] border border-zinc-200 hover:border-blue-500 hover:text-blue-600 text-zinc-800 font-black text-2xl flex items-center justify-center shadow-sm active:scale-90 transition-all font-mono"
                     >
                       {op}
                     </button>
@@ -1785,7 +1785,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               </div>
             ) : (
               /* NORMAL MODE MATRIX SELECTION TILES */
-              <div className="grid grid-cols-4 gap-2.5 w-full mb-4 p-2.5 bg-black/65 border border-zinc-900/80 rounded-2xl select-none">
+              <div className="grid grid-cols-4 gap-2.5 w-full mb-4 p-2.5 bg-white border border-zinc-200/90 rounded-2xl shadow-sm select-none">
                 {matchData.grid.map((val: number, idx: number) => {
                   const isSelected = selectedIndices.includes(idx);
                   return (
@@ -1794,14 +1794,14 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                       onClick={() => handleCellClick(idx)}
                       className={`aspect-square rounded-xl border font-mono font-black text-lg flex items-center justify-center relative transition-all active:scale-90 ${
                         isSelected 
-                          ? 'border-cyan-500 bg-cyan-950/20 text-cyan-400 font-extrabold shadow-[0_0_15px_#06b6d4]' 
-                          : 'border-zinc-850 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700 font-extrabold shadow-sm' 
+                          : 'border-zinc-200 bg-[#f7f7f7] text-zinc-800 hover:border-zinc-300 hover:bg-zinc-100 shadow-sm'
                       }`}
                     >
                       {val}
 
                       {isSelected && (
-                        <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-500 text-[9px] font-black text-black flex items-center justify-center">
+                        <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-blue-600 text-[9px] font-black text-white flex items-center justify-center">
                           {selectedIndices.indexOf(idx) + 1}
                         </span>
                       )}
@@ -1829,87 +1829,87 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
       {onlineSubMode === 'game_over' && matchData && (
         <div className="flex-1 flex flex-col justify-center items-center py-4 w-full max-w-sm mx-auto select-none px-4">
           
-          <div className={`w-full max-w-xs rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl relative border ${
+          <div className={`w-full max-w-xs rounded-3xl p-6 flex flex-col items-center text-center shadow-xl relative border bg-[#f7f7f7] text-zinc-900 ${
             matchData.winnerId === currentUid 
-              ? 'border-emerald-500/30 bg-zinc-950' 
-              : matchData.winnerId === 'draw' ? 'border-amber-500/30 bg-zinc-950' : 'border-red-500/30 bg-zinc-950'
+              ? 'border-emerald-300' 
+              : matchData.winnerId === 'draw' ? 'border-amber-300' : 'border-red-300'
           }`}>
             
             {matchData.winnerId === currentUid ? (
               <>
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4 animate-bounce">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-4 animate-bounce">
                   <CheckCircle className="w-10 h-10" />
                 </div>
 
-                <h3 className="text-xl font-black tracking-widest text-emerald-400 uppercase leading-none mb-1">
+                <h3 className="text-xl font-black tracking-widest text-emerald-600 uppercase leading-none mb-1">
                   VICTORY!
                 </h3>
                 
                 {matchData.abandonedByOpponent ? (
-                  <p className="text-[9px] text-amber-400 uppercase font-black tracking-widest mb-4">
-                    Opponent Abandonded Game!
+                  <p className="text-[9px] text-amber-600 uppercase font-black tracking-widest mb-4">
+                    Opponent Abandoned Game!
                   </p>
                 ) : (
-                  <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-4">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4">
                     Winner of the speedrun duel!
                   </p>
                 )}
 
-                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px]">
+                <div className="p-3 bg-white border border-zinc-200/90 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px] shadow-sm">
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Your Score:</span>
-                    <span className="text-emerald-400 font-bold">{myScore} Solved</span>
+                    <span className="text-emerald-600 font-bold">{myScore} Solved</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Challenger:</span>
-                    <span className="text-zinc-400">{opponentScore} Solved</span>
+                    <span className="text-zinc-700">{opponentScore} Solved</span>
                   </div>
                 </div>
               </>
             ) : matchData.winnerId === 'draw' ? (
               <>
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4">
+                <div className="w-16 h-16 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600 mb-4">
                   <Award className="w-10 h-10 animate-pulse" />
                 </div>
 
-                <h3 className="text-xl font-black tracking-widest text-amber-400 uppercase leading-none mb-1">
+                <h3 className="text-xl font-black tracking-widest text-amber-600 uppercase leading-none mb-1">
                   TIED DUEL
                 </h3>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-6">
                   It's an even match!
                 </p>
 
-                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px]">
+                <div className="p-3 bg-white border border-zinc-200/90 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px] shadow-sm">
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Both Solved:</span>
-                    <span className="text-amber-400 font-bold">{myScore} Puzzles</span>
+                    <span className="text-amber-600 font-bold">{myScore} Puzzles</span>
                   </div>
                 </div>
               </>
             ) : (
               <>
-                <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 animate-shake">
+                <div className="w-16 h-16 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-500 mb-4 animate-shake">
                   <AlertOctagon className="w-10 h-10" />
                 </div>
 
-                <h3 className="text-xl font-black tracking-widest text-red-400 uppercase leading-none mb-1">
+                <h3 className="text-xl font-black tracking-widest text-red-500 uppercase leading-none mb-1">
                   DEFEAT
                 </h3>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 truncate max-w-[180px]">
                   Winner: {p2Name}
                 </p>
-                <p className="text-[8px] text-zinc-600 uppercase tracking-wider mb-4">
+                <p className="text-[8px] text-zinc-400 uppercase tracking-wider mb-4">
                   They solved more puzzles before time ran out
                 </p>
 
-                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px]">
+                <div className="p-3 bg-white border border-zinc-200/90 rounded-2xl w-full mb-6 text-left space-y-1.5 font-mono text-[10px] shadow-sm">
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Your Score:</span>
-                    <span className="text-zinc-400">{myScore} Solved</span>
+                    <span className="text-zinc-700">{myScore} Solved</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Challenger:</span>
-                    <span className="text-pink-400 font-bold">{opponentScore} Solved</span>
+                    <span className="text-pink-600 font-bold">{opponentScore} Solved</span>
                   </div>
                 </div>
               </>
@@ -1919,7 +1919,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             <div className="w-full space-y-2.5">
               
               {rematchDeclinedMessage && (
-                <p className="text-[9px] text-red-400 bg-red-950/20 border border-red-950 py-2 rounded-xl uppercase font-black tracking-widest leading-none">
+                <p className="text-[9px] text-red-600 bg-red-50 border border-red-200 py-2 rounded-xl uppercase font-black tracking-widest leading-none">
                   {rematchDeclinedMessage}
                 </p>
               )}
@@ -1927,43 +1927,43 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               {!isRematchRequestedByMe && !isRematchRequestReceived && (
                 <button
                   onClick={handleRequestRematch}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 border border-emerald-400/20"
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 border border-sky-400/20"
                 >
                   <RefreshCw className="w-4 h-4 animate-spin-slow" /> Request Rematch
                 </button>
               )}
 
               {isRematchRequestedByMe && (
-                <div className="w-full p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                  <span className="text-[9px] text-emerald-400 font-black uppercase tracking-widest">
+                <div className="w-full p-3.5 rounded-2xl bg-white border border-zinc-200 flex flex-col items-center justify-center gap-2 shadow-sm">
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                  <span className="text-[9px] text-blue-600 font-black uppercase tracking-widest">
                     Rematch Requested...
                   </span>
-                  <span className="text-[8px] text-zinc-500">Waiting for Challenger to Accept</span>
+                  <span className="text-[8px] text-zinc-400">Waiting for Challenger to Accept</span>
                 </div>
               )}
 
               {isRematchRequestReceived && (
-                <div className="w-full p-4 rounded-2xl bg-zinc-900 border-2 border-dashed border-cyan-500/50 flex flex-col items-center justify-center gap-3 animate-pulse">
-                  <Swords className="w-6 h-6 text-cyan-400" />
+                <div className="w-full p-4 rounded-2xl bg-white border-2 border-dashed border-blue-400 flex flex-col items-center justify-center gap-3 shadow-sm animate-pulse">
+                  <Swords className="w-6 h-6 text-blue-600" />
                   <div className="text-center">
-                    <span className="text-[10px] text-cyan-400 font-black uppercase tracking-widest block">
+                    <span className="text-[10px] text-blue-600 font-black uppercase tracking-widest block">
                       Rematch Requested!
                     </span>
-                    <span className="text-[8px] text-zinc-400 mt-1 block">
+                    <span className="text-[8px] text-zinc-500 mt-1 block">
                       Opponent wants to play again!
                     </span>
                   </div>
                   <div className="flex gap-2 w-full mt-1">
                     <button
                       onClick={handleDeclineRematch}
-                      className="flex-1 py-2 rounded-xl bg-red-950/30 border border-red-900 text-red-400 font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all"
+                      className="flex-1 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all"
                     >
                       Decline
                     </button>
                     <button
                       onClick={handleAcceptRematch}
-                      className="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all"
+                      className="flex-1 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all"
                     >
                       Accept
                     </button>
@@ -1973,7 +1973,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
 
               <button
                 onClick={resetToLobby}
-                className="w-full py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-zinc-900 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm"
               >
                 Exit to Lobby
               </button>

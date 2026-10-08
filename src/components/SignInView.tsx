@@ -89,20 +89,12 @@ export const SignInView: React.FC<SignInViewProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn text-white select-none">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn select-none">
       
       {/* Background Cosmic Blueprint Circles Decoration */}
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
-      
-      <div className="absolute -top-24 -left-24 w-[340px] h-[340px] pointer-events-none opacity-30 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
-        <svg viewBox="0 0 100 100" className="w-full h-full text-blue-500">
-          <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.2" />
-          <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="0.4" />
-          <circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" strokeWidth="0.8" />
-        </svg>
-      </div>
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
-      <div className="max-w-sm w-full rounded-3xl bg-zinc-950 border border-blue-500/30 p-6 shadow-2xl relative text-center z-10 animate-scaleUp">
+      <div className="max-w-sm w-full rounded-3xl bg-white border border-zinc-200/90 p-6 shadow-2xl relative text-center z-10 animate-scaleUp text-zinc-900">
         
         {/* Optional Dismiss button if opened from settings/guest mode */}
         {canDismiss && onClose && (
@@ -111,28 +103,28 @@ export const SignInView: React.FC<SignInViewProps> = ({
               sounds.playClick();
               onClose();
             }}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-all active:scale-90"
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-zinc-900 transition-all active:scale-90"
             title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         )}
 
-        {/* Glow Header Icon */}
-        <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3 mx-auto shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-          <Sparkles className="w-6 h-6 text-blue-400" />
+        {/* Header Icon */}
+        <div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mb-3 mx-auto shadow-sm">
+          <Sparkles className="w-6 h-6 text-indigo-600" />
         </div>
 
-        <h2 className="text-base font-black tracking-widest text-blue-400 uppercase mb-1">
+        <h2 className="text-base font-black tracking-widest text-zinc-900 uppercase mb-1">
           Sign In / Login
         </h2>
-        <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-4">
+        <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4 font-semibold">
           Save progress, earn sticks & join rankings
         </p>
 
         {/* Error message card */}
         {displayError && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-[10px] text-left leading-normal mb-4 font-semibold animate-fadeIn">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-[10px] text-left leading-normal mb-4 font-semibold animate-fadeIn">
             {displayError}
           </div>
         )}
@@ -140,7 +132,7 @@ export const SignInView: React.FC<SignInViewProps> = ({
         {/* 1. Email & Password Form */}
         <form onSubmit={handleEmailSubmit} className="space-y-2.5 text-left mb-4">
           <div>
-            <label className="text-[8px] font-black uppercase tracking-widest text-zinc-400 block mb-1">
+            <label className="text-[8px] font-black uppercase tracking-widest text-zinc-500 block mb-1">
               Email Address
             </label>
             <input
@@ -148,14 +140,14 @@ export const SignInView: React.FC<SignInViewProps> = ({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:bg-white focus:border-indigo-500 focus:outline-none font-mono"
               placeholder="name@example.com"
               autoComplete="email"
             />
           </div>
 
           <div>
-            <label className="text-[8px] font-black uppercase tracking-widest text-zinc-400 block mb-1">
+            <label className="text-[8px] font-black uppercase tracking-widest text-zinc-500 block mb-1">
               Password (Min 6 chars)
             </label>
             <input
@@ -164,7 +156,7 @@ export const SignInView: React.FC<SignInViewProps> = ({
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:bg-white focus:border-indigo-500 focus:outline-none font-mono"
               placeholder="••••••"
               autoComplete="current-password"
             />
@@ -173,7 +165,7 @@ export const SignInView: React.FC<SignInViewProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 mt-1"
+            className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 mt-1"
           >
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -188,11 +180,11 @@ export const SignInView: React.FC<SignInViewProps> = ({
 
         {/* OR Divider */}
         <div className="relative flex py-1.5 items-center">
-          <div className="flex-grow border-t border-white/5"></div>
-          <span className="flex-shrink mx-3 text-[8px] font-black uppercase tracking-widest text-zinc-500">
+          <div className="flex-grow border-t border-zinc-200"></div>
+          <span className="flex-shrink mx-3 text-[8px] font-black uppercase tracking-widest text-zinc-400">
             OR
           </span>
-          <div className="flex-grow border-t border-white/5"></div>
+          <div className="flex-grow border-t border-zinc-200"></div>
         </div>
 
         {/* 2. Google Sign-In */}
@@ -200,9 +192,9 @@ export const SignInView: React.FC<SignInViewProps> = ({
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="mt-2 w-full py-2.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 disabled:opacity-50 text-zinc-200 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+          className="mt-2 w-full py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 disabled:opacity-50 text-zinc-700 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
         >
-          <Globe className="w-3.5 h-3.5 text-zinc-400" />
+          <Globe className="w-3.5 h-3.5 text-zinc-500" />
           Sign in with Google
         </button>
 
@@ -214,7 +206,7 @@ export const SignInView: React.FC<SignInViewProps> = ({
               sounds.playClick();
               onContinueAsGuest();
             }}
-            className="mt-3.5 w-full py-2 bg-transparent hover:bg-white/5 border border-white/10 text-zinc-400 hover:text-zinc-200 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5"
+            className="mt-3.5 w-full py-2 bg-transparent hover:bg-zinc-50 border border-zinc-200 text-zinc-600 hover:text-zinc-900 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5"
           >
             <UserCheck className="w-3 h-3 text-zinc-500" />
             <span>Continue as Guest (Play Offline)</span>
@@ -222,8 +214,8 @@ export const SignInView: React.FC<SignInViewProps> = ({
           </button>
         )}
 
-        <p className="text-[7.5px] text-zinc-500 mt-3 leading-relaxed">
-          * Email Sync is 100% crash-proof and works natively. Google Sign-In requires configured Google Play Services.
+        <p className="text-[7.5px] text-zinc-400 mt-3 leading-relaxed">
+          * Email Sync works seamlessly across all devices. Google Sign-In requires active Google Play Services.
         </p>
 
       </div>

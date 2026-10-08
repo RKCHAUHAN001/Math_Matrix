@@ -452,7 +452,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
               return (
                 <div
                   key={i}
-                  className="inline-flex items-center justify-center min-w-[42px] h-11 md:min-w-[48px] md:h-12 px-3 mx-1 rounded-2xl border-2 border-emerald-400 bg-gradient-to-b from-emerald-500/35 via-teal-500/25 to-emerald-600/35 text-white font-black text-lg md:text-xl font-mono shadow-[0_0_18px_rgba(16,185,129,0.6)] transform scale-105 transition-all animate-fadeIn"
+                  className="inline-flex items-center justify-center min-w-[42px] h-11 md:min-w-[48px] md:h-12 px-3 mx-1 rounded-2xl border-2 border-blue-500 bg-blue-600 text-white font-black text-lg md:text-xl font-mono shadow-sm transform scale-105 transition-all animate-fadeIn"
                 >
                   {val}
                 </div>
@@ -462,7 +462,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
             return (
               <div
                 key={i}
-                className="inline-flex items-center justify-center min-w-[42px] h-11 md:min-w-[48px] md:h-12 px-2.5 mx-1 rounded-2xl border-2 border-dashed border-cyan-400 bg-cyan-950/50 text-cyan-300 font-black text-base md:text-lg font-mono shadow-[0_0_16px_rgba(6,182,212,0.45)] animate-pulse"
+                className="inline-flex items-center justify-center min-w-[42px] h-11 md:min-w-[48px] md:h-12 px-2.5 mx-1 rounded-2xl border-2 border-dashed border-zinc-400 bg-zinc-100 text-zinc-600 font-black text-base md:text-lg font-mono shadow-sm animate-pulse"
               >
                 ?
               </div>
@@ -471,7 +471,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
           if (token === '*') {
             return (
-              <span key={i} className="text-amber-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">
+              <span key={i} className="text-amber-600 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans">
                 ×
               </span>
             );
@@ -479,7 +479,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
           if (token === '/') {
             return (
-              <span key={i} className="text-amber-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">
+              <span key={i} className="text-amber-600 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans">
                 ÷
               </span>
             );
@@ -487,7 +487,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
           if (token === '+') {
             return (
-              <span key={i} className="text-cyan-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+              <span key={i} className="text-blue-600 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans">
                 +
               </span>
             );
@@ -495,7 +495,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
           if (token === '-') {
             return (
-              <span key={i} className="text-rose-400 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">
+              <span key={i} className="text-rose-600 font-black text-2xl md:text-3xl mx-1.5 select-none font-sans">
                 −
               </span>
             );
@@ -503,14 +503,14 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
           if (token === '(' || token === ')') {
             return (
-              <span key={i} className="text-yellow-300 font-extrabold text-2xl md:text-3xl mx-0.5 select-none drop-shadow-[0_0_8px_rgba(253,224,71,0.5)]">
+              <span key={i} className="text-zinc-700 font-extrabold text-2xl md:text-3xl mx-0.5 select-none">
                 {token}
               </span>
             );
           }
 
           return (
-            <span key={i} className="text-white font-bold text-lg mx-0.5">
+            <span key={i} className="text-zinc-900 font-bold text-lg mx-0.5">
               {token}
             </span>
           );
@@ -528,7 +528,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
       <div className="w-full max-w-sm flex justify-end gap-2 mb-3 shrink-0">
         <button
           onClick={() => setMuted(!muted)}
-          className={`p-1.5 rounded-xl border ${theme.border} text-zinc-500 hover:text-white transition`}
+          className="p-1.5 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900 shadow-sm transition"
           title={muted ? "Unmute Audio" : "Mute Audio"}
         >
           {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -539,41 +539,41 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
       <div className="w-full max-w-sm flex flex-col items-center animate-fadeIn">
         
         {/* Top Stats Banner */}
-        <div className={`w-full rounded-xl border ${theme.border} ${theme.cardBg} p-2.5 mb-2 flex items-center justify-between shadow-md`}>
+        <div className="w-full rounded-2xl border border-zinc-200/90 bg-white p-3 mb-2.5 flex items-center justify-between shadow-sm">
           {isLevelMode ? (
             <>
               <div className="min-w-0 pr-1">
                 <div className="flex items-center gap-1.5">
                   {currentLevelDetail?.isBoss ? (
-                    <span className="text-[7.5px] uppercase tracking-wider text-amber-400 font-black px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center gap-0.5">
-                      <Sparkles className="w-2.5 h-2.5" /> Boss Level
+                    <span className="text-[7.5px] uppercase tracking-wider text-amber-700 font-black px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-300 flex items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5 text-amber-500" /> Boss Level
                     </span>
                   ) : (
-                    <p className="text-[8px] uppercase tracking-wider text-blue-400 font-bold">Level Mode</p>
+                    <p className="text-[8px] uppercase tracking-wider text-indigo-600 font-bold">Level Mode</p>
                   )}
                 </div>
-                <p className="text-xs sm:text-sm font-black tracking-wide text-white truncate mt-0.5">
+                <p className="text-xs sm:text-sm font-black tracking-wide text-zinc-900 truncate mt-0.5">
                   {currentLevelDetail?.title || `Level ${currentLevelNum}`}
                 </p>
               </div>
 
               {/* GORGEOUS HEART LIVES CONTAINER */}
-              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-full shrink-0">
+              <div className="flex items-center gap-1 bg-zinc-50 border border-zinc-200/80 px-2.5 py-1.5 rounded-full shrink-0 shadow-inner">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Heart
                     key={i}
                     className={`w-3.5 h-3.5 transition-all duration-300 ${
                       i < lives 
                         ? "text-red-500 fill-red-500 filter drop-shadow-[0_0_2px_rgba(239,68,68,0.5)] scale-110" 
-                        : "text-zinc-700 fill-zinc-800 scale-95"
+                        : "text-zinc-300 fill-zinc-200 scale-95"
                     }`}
                   />
                 ))}
               </div>
 
               <div className="text-right shrink-0">
-                <p className="text-[8px] uppercase tracking-wider text-zinc-500">Tier</p>
-                <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">
+                <p className="text-[8px] uppercase tracking-wider text-zinc-400">Tier</p>
+                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">
                   {activeDifficulty}
                 </p>
               </div>
@@ -582,7 +582,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
             <>
               <div>
                 <div className="flex items-center gap-1">
-                  <p className="text-[8px] uppercase tracking-wider text-zinc-500">Score</p>
+                  <p className="text-[8px] uppercase tracking-wider text-zinc-400">Score</p>
                   {isOnlineMode && (
                     <span className="flex h-1.5 w-1.5 relative shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -590,49 +590,49 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
                     </span>
                   )}
                 </div>
-                <p className={`text-lg font-black font-mono tracking-tight ${theme.text}`}>{score}</p>
+                <p className="text-lg font-black font-mono tracking-tight text-zinc-900">{score}</p>
               </div>
 
               {/* GORGEOUS HEART LIVES CONTAINER */}
-              <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-full">
+              <div className="flex items-center gap-1 bg-zinc-50 border border-zinc-200/80 px-2.5 py-1.5 rounded-full shadow-inner">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <Heart
                     key={i}
                     className={`w-3.5 h-3.5 transition-all duration-300 ${
                       i < lives 
                         ? "text-red-500 fill-red-500 filter drop-shadow-[0_0_2px_rgba(239,68,68,0.5)] scale-110" 
-                        : "text-zinc-700 fill-zinc-800 scale-95"
+                        : "text-zinc-300 fill-zinc-200 scale-95"
                     }`}
                   />
                 ))}
               </div>
 
               {combo > 1 && (
-                <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full animate-bounce">
+                <div className="flex items-center gap-1 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full animate-bounce">
                   <Zap className="w-3 h-3 text-amber-500 fill-current animate-pulse" />
-                  <span className="text-[8px] font-black text-amber-400 uppercase tracking-wider">
+                  <span className="text-[8px] font-black text-amber-700 uppercase tracking-wider">
                     {combo}x Combo
                   </span>
                 </div>
               )}
 
               <div className="text-right">
-                <p className="text-[8px] uppercase tracking-wider text-zinc-500">Solved</p>
-                <p className={`text-sm font-bold font-mono ${theme.text}`}>{solvedCount}</p>
+                <p className="text-[8px] uppercase tracking-wider text-zinc-400">Solved</p>
+                <p className="text-sm font-bold font-mono text-zinc-900">{solvedCount}</p>
               </div>
             </>
           )}
         </div>
 
         {/* High Visibility Equation Formula Card */}
-        <div className="w-full rounded-2xl border-2 border-cyan-500/40 bg-gradient-to-b from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 backdrop-blur-xl p-3 mb-3 shadow-[0_8px_30px_rgba(0,0,0,0.7),0_0_24px_rgba(6,182,212,0.18)] relative overflow-hidden">
+        <div className="w-full rounded-2xl border border-zinc-200/90 bg-[#f7f7f7] p-3 mb-3 shadow-sm relative overflow-hidden">
           {/* Top Luminous Timer Progress Bar */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-zinc-900/80 overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-zinc-200 overflow-hidden">
             <div 
               className={`h-full ${
                 timeLeft <= 5 
-                  ? 'bg-gradient-to-r from-red-500 to-rose-600 shadow-[0_0_12px_#ef4444]' 
-                  : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]'
+                  ? 'bg-gradient-to-r from-red-500 to-rose-600' 
+                  : 'bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500'
               } transition-all duration-300`} 
               style={{ width: `${(timeLeft / currentMaxTime) * 100}%` }}
             />
@@ -641,15 +641,15 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
           {/* Equation Header Row */}
           <div className="flex justify-between items-center mb-2 px-1 pt-1.5">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-              <span className="text-[9px] uppercase tracking-[0.25em] font-black text-cyan-300 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+              <span className="text-[9px] uppercase tracking-[0.25em] font-black text-zinc-600">
                 EQUATION WORKSPACE
               </span>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/70 border border-white/10 shadow-inner">
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white border border-zinc-200 shadow-sm">
               <span className="text-[8px] uppercase tracking-wider text-zinc-400 font-bold">TIME</span>
               <span className={`text-xs font-black font-mono tracking-wider ${
-                timeLeft <= 5 ? 'text-red-400 animate-pulse font-extrabold' : 'text-cyan-400'
+                timeLeft <= 5 ? 'text-red-500 animate-pulse font-extrabold' : 'text-blue-600'
               }`}>
                 {timeLeft}s
               </span>
@@ -657,18 +657,18 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
           </div>
 
           {/* High Contrast Formula Workspace Container */}
-          <div className="py-2.5 px-2 rounded-xl bg-black/70 border border-white/10 shadow-inner">
+          <div className="py-2.5 px-2 rounded-xl bg-white border border-zinc-200/90 shadow-sm">
             {renderFormulaText()}
           </div>
 
           {/* High Visibility Target Result Callout */}
-          <div className="flex items-center justify-center gap-2.5 mt-2.5 pt-2 border-t border-white/10 select-none">
-            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-300 drop-shadow-sm">
+          <div className="flex items-center justify-center gap-2.5 mt-2.5 pt-2 border-t border-zinc-200/80 select-none">
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-500">
               TARGET RESULT
             </span>
-            <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-amber-500/20 border-2 border-amber-400/60 shadow-[0_0_18px_rgba(245,158,11,0.35)]">
-              <span className="text-amber-400 text-lg font-black font-mono">=</span>
-              <span className="text-2xl font-black font-mono text-amber-300 tracking-wider filter drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]">
+            <div className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white border border-zinc-200 shadow-sm">
+              <span className="text-zinc-600 text-lg font-black font-mono">=</span>
+              <span className="text-2xl font-black font-mono text-blue-600 tracking-wider">
                 {target}
               </span>
             </div>
@@ -677,7 +677,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
         {/* Matrix Interactive Cells Grid */}
         <div 
-          className="grid gap-1.5 w-full mb-3 p-1.5 bg-black/40 border border-zinc-900/60 rounded-xl select-none"
+          className="grid gap-1.5 w-full mb-3 p-2 bg-white border border-zinc-200/90 rounded-2xl shadow-sm select-none"
           style={{ gridTemplateColumns: `repeat(${gridDim}, minmax(0, 1fr))` }}
         >
           {grid.map((val, idx) => {
@@ -686,16 +686,16 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
               <button
                 key={idx}
                 onClick={() => handleCellClick(idx)}
-                className={`aspect-square rounded-lg border font-mono font-black text-base flex items-center justify-center relative transition-all active:scale-90 ${
+                className={`aspect-square rounded-xl border font-mono font-black text-base sm:text-lg flex items-center justify-center relative transition-all active:scale-90 ${
                   isSelected 
-                    ? `border-blue-500 bg-zinc-800/80 text-white font-extrabold ${theme.glow}` 
-                    : `border-zinc-850 bg-black text-zinc-400 hover:border-zinc-700 hover:text-white`
+                    ? 'border-indigo-600 bg-indigo-600 text-white font-extrabold shadow-md ring-2 ring-indigo-300 scale-95' 
+                    : 'border-zinc-200 bg-zinc-50 text-zinc-800 hover:border-zinc-300 hover:bg-white shadow-xs'
                 }`}
               >
                 {val}
 
                 {isSelected && (
-                  <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-zinc-700 border border-zinc-500 text-[8px] font-bold text-white flex items-center justify-center">
+                  <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white text-indigo-700 text-[8px] font-black flex items-center justify-center shadow-xs">
                     {selectedIndices.indexOf(idx) + 1}
                   </span>
                 )}
@@ -708,17 +708,17 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
         <div className="w-full flex gap-1.5 shrink-0">
           <button
             onClick={handleSkipMatrix}
-            className={`flex-1 py-2.5 rounded-xl border ${theme.border} text-[9px] font-bold uppercase transition active:scale-95 flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2.5 rounded-xl border text-[9px] font-bold uppercase transition active:scale-95 flex items-center justify-center gap-1 shadow-sm ${
               skipsLeft <= 0 
-                ? 'border-yellow-500/50 bg-yellow-950/10 text-yellow-500 hover:border-yellow-400 hover:bg-yellow-950/20' 
-                : 'text-zinc-500 hover:text-white hover:border-zinc-700'
+                ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' 
+                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900'
             }`}
           >
             <RotateCcw className="w-3 h-3" /> {skipsLeft > 0 ? `Skip Matrix (${skipsLeft} left)` : '📺 Watch Ad for Skip'}
           </button>
           <button
             onClick={handleEndGame}
-            className="flex-1 py-2.5 rounded-xl border border-red-950/70 hover:border-red-500/50 bg-red-950/20 text-[9px] font-bold uppercase text-red-400 hover:text-red-300 transition active:scale-95"
+            className="flex-1 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-[9px] font-bold uppercase transition active:scale-95 shadow-sm"
           >
             {isLevelMode ? 'Exit Level' : 'End Challenge'}
           </button>
@@ -727,8 +727,8 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
       {/* GORGEOUS LEVEL SUCCESS CLEAR OVERLAY */}
       {showLevelSuccessOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn">
-          <div className={`w-full max-w-xs rounded-3xl border border-emerald-500/30 bg-zinc-950 p-6 flex flex-col items-center text-center shadow-2xl relative overflow-hidden`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-xs rounded-3xl border border-zinc-200/90 bg-[#f7f7f7] p-6 flex flex-col items-center text-center shadow-2xl relative overflow-hidden text-zinc-900">
             
             <div className="absolute -top-12 -left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
             
@@ -742,7 +742,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
                     className={`transition-all duration-500 transform ${
                       isEarned 
                         ? 'text-amber-400 scale-110 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]' 
-                        : 'text-zinc-700 scale-90 opacity-30'
+                        : 'text-zinc-300 scale-90 opacity-40'
                     }`}
                   >
                     <Star 
@@ -753,26 +753,26 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
               })}
             </div>
 
-            <h3 className="text-base font-black tracking-widest text-white uppercase leading-none mb-1">
+            <h3 className="text-base font-black tracking-widest text-zinc-900 uppercase leading-none mb-1">
               {earnedStars === 3 ? 'PERFECT 3-STAR!' : earnedStars === 2 ? 'EXCELLENT CLEAR!' : 'STAGE CLEARED!'}
             </h3>
-            <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-3">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">
               {currentLevelDetail?.title || `Level ${currentLevelNum} Completed`}
             </p>
 
             {/* PERFORMANCE METRICS */}
-            <div className="w-full bg-zinc-900/80 border border-zinc-850 rounded-2xl p-2.5 mb-4 space-y-1.5 text-[10px]">
+            <div className="w-full bg-white border border-zinc-200/90 rounded-2xl p-2.5 mb-4 space-y-1.5 text-[10px] shadow-sm">
               <div className="flex justify-between items-center">
-                <span className="text-zinc-400 uppercase font-bold text-[9px]">Time Left:</span>
-                <span className="font-mono text-emerald-400 font-bold">{timeLeft}s / {levelMaxTime}s</span>
+                <span className="text-zinc-500 uppercase font-bold text-[9px]">Time Left:</span>
+                <span className="font-mono text-emerald-600 font-bold">{timeLeft}s / {levelMaxTime}s</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-400 uppercase font-bold text-[9px]">Hearts Left:</span>
-                <span className="text-red-400 font-bold">{'❤️'.repeat(lives)}</span>
+                <span className="text-zinc-500 uppercase font-bold text-[9px]">Hearts Left:</span>
+                <span className="text-red-500 font-bold">{'❤️'.repeat(lives)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-400 uppercase font-bold text-[9px]">Stars Earned:</span>
-                <span className="text-amber-400 font-black">{earnedStars} / 3 ⭐</span>
+                <span className="text-zinc-500 uppercase font-bold text-[9px]">Stars Earned:</span>
+                <span className="text-amber-600 font-black">{earnedStars} / 3 ⭐</span>
               </div>
             </div>
 
@@ -780,19 +780,19 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
               {currentLevelNum !== undefined && currentLevelNum < 100 ? (
                 <button
                   onClick={handlePlayNextLevel}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-[0_4px_14px_rgba(16,185,129,0.3)] transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-emerald-400/20"
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-widest shadow-md transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-sky-400/20"
                 >
                   Next Level <ChevronRight className="w-4 h-4" />
                 </button>
               ) : (
-                <p className="text-[10px] text-yellow-500 font-bold uppercase mb-2">🏆 You Completed All 100 Levels!</p>
+                <p className="text-[10px] text-amber-600 font-bold uppercase mb-2">🏆 You Completed All 100 Levels!</p>
               )}
 
               {/* Replay this level for 3 stars */}
               {earnedStars < 3 && (
                 <button
                   onClick={handleRetryLevel}
-                  className="w-full py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 font-bold text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                  className="w-full py-2.5 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 font-bold text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
                 >
                   <RefreshCw className="w-3 h-3" /> Replay For 3 Stars
                 </button>
@@ -800,7 +800,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
               <button
                 onClick={() => { sounds.playClick(); if (onExitLevelMode) onExitLevelMode(); }}
-                className="w-full py-2.5 rounded-2xl bg-zinc-900 border border-zinc-850 hover:bg-zinc-850 text-zinc-400 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                className="w-full py-2.5 rounded-2xl bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
               >
                 <Map className="w-3.5 h-3.5" /> Levels Map
               </button>
@@ -811,16 +811,16 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
       {/* GORGEOUS LEVEL FAILURE GAME OVER OVERLAY */}
       {showLevelFailureOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-fadeIn">
-          <div className={`w-full max-w-xs rounded-3xl border border-red-500/30 bg-zinc-950 p-6 flex flex-col items-center text-center shadow-2xl relative overflow-hidden`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-xs rounded-3xl border border-zinc-200/90 bg-[#f7f7f7] p-6 flex flex-col items-center text-center shadow-2xl relative overflow-hidden text-zinc-900">
             
             <div className="absolute -top-12 -left-12 w-32 h-32 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 animate-bounce">
+            <div className="w-16 h-16 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-500 mb-4 animate-bounce">
               <AlertTriangle className="w-10 h-10" />
             </div>
 
-            <h3 className="text-lg font-black tracking-widest text-white uppercase leading-none mb-1">
+            <h3 className="text-lg font-black tracking-widest text-zinc-900 uppercase leading-none mb-1">
               Time Out!
             </h3>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-6">
@@ -831,15 +831,15 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
               {/* RETRY BUTTON - Main Action */}
               <button
                 onClick={handleRetryLevel}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-black text-xs uppercase tracking-widest shadow-[0_4px_14px_rgba(239,68,68,0.3)] transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-red-400/20 animate-pulse"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-widest shadow-md transform active:scale-95 transition-all flex items-center justify-center gap-2 border border-sky-400/20"
               >
-                <RefreshCw className="w-4 h-4 animate-spin-slow" /> Retry Level
+                <RefreshCw className="w-4 h-4" /> Retry Level
               </button>
 
               {/* BACK MAP BUTTON */}
               <button
                 onClick={() => { sounds.playClick(); if (onExitLevelMode) onExitLevelMode(); }}
-                className="w-full py-3 rounded-2xl bg-zinc-900 border border-zinc-850 hover:bg-zinc-850 text-zinc-400 hover:text-white font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                className="w-full py-3 rounded-2xl bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-extrabold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
               >
                 <Map className="w-3.5 h-3.5" /> Levels Map
               </button>

@@ -300,13 +300,13 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
       <div className="w-full flex items-center justify-between mb-4">
         <button
           onClick={() => { sounds.playClick(); onExit(); }}
-          className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
+          className="w-9 h-9 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-50 transition-all shadow-sm shrink-0"
         >
-          <ChevronLeft className="w-4 h-4 text-zinc-300" />
+          <ChevronLeft className="w-4 h-4 text-zinc-600" />
         </button>
 
         <div className="text-center">
-          <h2 className="text-sm font-black tracking-[0.2em] text-emerald-400 leading-none uppercase">
+          <h2 className="text-sm font-black tracking-[0.2em] text-zinc-900 leading-none uppercase">
             Advance Mode
           </h2>
           <span className="text-[7px] text-zinc-500 uppercase tracking-widest mt-1 block">
@@ -316,23 +316,23 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
         <button
           onClick={() => setMuted(!muted)}
-          className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 transition-all shadow-md shrink-0"
+          className="w-9 h-9 rounded-xl bg-white border border-zinc-200 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-50 transition-all shadow-sm shrink-0"
         >
-          {muted ? <VolumeX className="w-4 h-4 text-zinc-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+          {muted ? <VolumeX className="w-4 h-4 text-zinc-400" /> : <Volume2 className="w-4 h-4 text-blue-600" />}
         </button>
       </div>
 
       {/* GAME RUN STATS BAR */}
       {!gameOver && (
-        <div className="w-full grid grid-cols-4 gap-2 p-2.5 rounded-2xl bg-zinc-950/60 border border-zinc-900 mb-4 text-center items-center shadow-md">
+        <div className="w-full grid grid-cols-4 gap-2 p-2.5 rounded-2xl bg-white border border-zinc-200/90 mb-4 text-center items-center shadow-sm">
           <div className="flex flex-col">
-            <span className="text-[7px] text-zinc-500 uppercase tracking-wider">Score</span>
-            <span className="text-sm font-black text-white font-mono">{score}</span>
+            <span className="text-[7px] text-zinc-400 uppercase tracking-wider">Score</span>
+            <span className="text-sm font-black text-zinc-900 font-mono">{score}</span>
           </div>
 
           <div className="flex flex-col items-center">
-            <span className="text-[7px] text-amber-500 uppercase tracking-wider font-bold">Sticks</span>
-            <span className="text-xs font-black text-amber-400 font-mono flex items-center justify-center gap-1">
+            <span className="text-[7px] text-amber-600 uppercase tracking-wider font-bold">Sticks</span>
+            <span className="text-xs font-black text-amber-600 font-mono flex items-center justify-center gap-1">
               <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> {(profile?.streak || profile?.sticks || 0)}
             </span>
           </div>
@@ -342,15 +342,15 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
               {[...Array(3)].map((_, i) => (
                 <Heart 
                   key={i} 
-                  className={`w-3.5 h-3.5 ${i < lives ? 'text-red-500 fill-current animate-pulse' : 'text-zinc-800'}`} 
+                  className={`w-3.5 h-3.5 ${i < lives ? 'text-red-500 fill-current animate-pulse' : 'text-zinc-200'}`} 
                 />
               ))}
             </div>
           </div>
 
           <div className="flex flex-col">
-            <span className="text-[7px] text-zinc-500 uppercase tracking-wider">Timer</span>
-            <span className={`text-sm font-black font-mono ${timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`}>
+            <span className="text-[7px] text-zinc-400 uppercase tracking-wider">Timer</span>
+            <span className={`text-sm font-black font-mono ${timeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-blue-600'}`}>
               00:{timeLeft.toString().padStart(2, '0')}
             </span>
           </div>
@@ -362,7 +362,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
         <div className="flex-1 flex flex-col justify-center items-center w-full py-4 shrink-0">
           
           {/* Main Equation Workspace Card - High Visibility Studio HUD */}
-          <div className="w-full p-5 rounded-3xl bg-gradient-to-b from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-purple-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_24px_rgba(168,85,247,0.2)] relative mb-5">
+          <div className="w-full p-5 rounded-3xl bg-[#f7f7f7] border border-zinc-200/90 shadow-sm relative mb-5">
             
             {combo > 1 && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-amber-500 text-black text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center gap-1 animate-bounce">
@@ -371,27 +371,27 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
             )}
 
             <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
-              <span className="text-[9px] uppercase tracking-[0.25em] font-black text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+              <span className="text-[9px] uppercase tracking-[0.25em] font-black text-zinc-600">
                 INSERT OPERATORS EQUATION
               </span>
             </div>
 
             {/* THE FORMULA WORKSPACE */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono py-4 px-2 rounded-2xl bg-black/70 border border-white/10 shadow-inner select-none leading-none">
+            <div className="flex flex-wrap items-center justify-center gap-2.5 font-mono py-4 px-2 rounded-2xl bg-white border border-zinc-200/90 shadow-sm select-none leading-none">
               
               {puzzle.numbers.map((num, idx) => (
                 <React.Fragment key={idx}>
-                  <span className="font-black text-white text-2xl md:text-3xl px-1 drop-shadow-md">{num}</span>
+                  <span className="font-black text-zinc-900 text-2xl md:text-3xl px-1">{num}</span>
                   {idx < puzzle.numbers.length - 1 && (
                     <button
                       onClick={() => { sounds.playClick(); setActiveSlotIndex(idx); }}
                       className={`w-11 h-11 md:w-12 md:h-12 rounded-2xl border-2 flex items-center justify-center text-lg md:text-xl font-black transition-all ${
                         activeSlotIndex === idx 
-                          ? 'border-cyan-400 bg-cyan-500/30 text-cyan-200 shadow-[0_0_16px_rgba(6,182,212,0.6)] scale-110' 
+                          ? 'border-blue-500 bg-blue-50 text-blue-600 shadow-sm scale-110' 
                           : (userOperators[idx] 
-                              ? 'border-purple-400 bg-purple-500/30 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.4)]' 
-                              : 'border-dashed border-cyan-400/80 bg-cyan-950/40 text-cyan-300 animate-pulse shadow-[0_0_12px_rgba(6,182,212,0.3)]')
+                              ? 'border-sky-400 bg-sky-50 text-sky-600 shadow-sm' 
+                              : 'border-dashed border-zinc-400 bg-zinc-100 text-zinc-600 animate-pulse')
                       }`}
                     >
                       {userOperators[idx] || '?'}
@@ -401,10 +401,10 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
               ))}
 
               {/* Equals */}
-              <span className="text-zinc-300 font-mono font-black text-2xl md:text-3xl mx-1">=</span>
+              <span className="text-zinc-600 font-mono font-black text-2xl md:text-3xl mx-1">=</span>
 
               {/* Solved Target */}
-              <span className="px-3 py-1 rounded-2xl bg-cyan-500/20 border-2 border-cyan-400/60 font-black text-2xl md:text-3xl font-mono text-cyan-300 filter drop-shadow-[0_0_10px_rgba(6,182,212,0.7)]">
+              <span className="px-3 py-1 rounded-2xl bg-white border border-zinc-200 font-black text-2xl md:text-3xl font-mono text-blue-600 shadow-sm">
                 {puzzle.target}
               </span>
 
@@ -413,12 +413,12 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
           </div>
 
           {/* CHOOSE OPERATOR OPERAND KEYS GRID */}
-          <div className="grid grid-cols-4 gap-3 w-full bg-black/45 border border-zinc-900/60 p-3 rounded-2xl">
+          <div className="grid grid-cols-4 gap-3 w-full bg-white border border-zinc-200/90 p-3 rounded-2xl shadow-sm">
             {OPERATORS.map((op) => (
               <button
                 key={op}
                 onClick={() => handleOperatorClick(op)}
-                className="aspect-square rounded-2xl bg-zinc-950 border border-zinc-800 hover:border-cyan-500/50 hover:text-cyan-400 text-white font-black text-xl flex items-center justify-center shadow-lg active:scale-90 transition-all font-mono"
+                className="aspect-square rounded-2xl bg-[#f7f7f7] border border-zinc-200 hover:border-blue-500 hover:text-blue-600 text-zinc-800 font-black text-xl flex items-center justify-center shadow-sm active:scale-90 transition-all font-mono"
               >
                 {op}
               </button>
@@ -429,33 +429,33 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
       ) : (
         /* GAME OVER SCREEN */
         <div className="flex-1 flex flex-col justify-center items-center w-full py-4 shrink-0 animate-fadeIn">
-          <div className="w-full max-w-xs rounded-3xl border border-red-500/20 bg-zinc-950/95 p-6 text-center shadow-2xl flex flex-col items-center">
+          <div className="w-full max-w-xs rounded-3xl border border-zinc-200/90 bg-[#f7f7f7] p-6 text-center shadow-xl flex flex-col items-center text-zinc-900">
             
-            <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 animate-shake">
+            <div className="w-14 h-14 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-500 mb-4 animate-shake">
               <AlertOctagon className="w-8 h-8" />
             </div>
 
-            <h3 className="text-lg font-black tracking-widest text-red-400 uppercase leading-none mb-1">
+            <h3 className="text-lg font-black tracking-widest text-red-500 uppercase leading-none mb-1">
               GAME OVER
             </h3>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-6">
               You ran out of lives!
             </p>
 
-            <div className="p-3.5 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-6 text-left font-mono text-xs space-y-1.5">
+            <div className="p-3.5 bg-white border border-zinc-200 rounded-2xl w-full mb-6 text-left font-mono text-xs space-y-1.5 shadow-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-500">Final Score:</span>
-                <span className="text-emerald-400 font-bold">{score} pts</span>
+                <span className="text-zinc-900 font-bold">{score} pts</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Highest Combo:</span>
-                <span className="text-zinc-300 font-bold">{combo} Max</span>
+                <span className="text-zinc-700 font-bold">{combo} Max</span>
               </div>
-              <div className="flex justify-between border-t border-zinc-800/80 pt-1.5 mt-1">
-                <span className="text-amber-400 flex items-center gap-1 font-bold">
+              <div className="flex justify-between border-t border-zinc-200 pt-1.5 mt-1">
+                <span className="text-amber-600 flex items-center gap-1 font-bold">
                   <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> Sticks Earned:
                 </span>
-                <span className="text-amber-300 font-bold">+{runSticks} (Total: {profile?.streak || profile?.sticks || 0})</span>
+                <span className="text-amber-600 font-bold">+{runSticks} (Total: {profile?.streak || profile?.sticks || 0})</span>
               </div>
             </div>
 
@@ -469,14 +469,14 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
               <button
                 onClick={handleResetGame}
-                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-emerald-400/20"
+                className="w-full py-3 px-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-sky-400/20"
               >
                 Try Again (Restart)
               </button>
 
               <button
                 onClick={() => { sounds.playClick(); onExit(); }}
-                className="w-full py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-[10px] uppercase font-black tracking-widest transition-all active:scale-95"
+                className="w-full py-3 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900 text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 shadow-sm"
               >
                 Exit to Menu
               </button>

@@ -136,7 +136,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
     : Boolean(myScoreRank);
 
   return (
-    <div className="w-full flex flex-col text-white select-none h-full">
+    <div className="w-full flex flex-col text-zinc-900 select-none h-full">
       
       {/* 1. TOP HEADER */}
       <header className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
@@ -149,36 +149,36 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
               onClose(); 
             }
           }}
-          className="w-9 h-9 rounded-xl bg-zinc-800/40 border border-white/10 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-700/50 transition-all shadow-md shrink-0"
+          className="w-9 h-9 rounded-xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
         >
-          <ChevronLeft className="w-4 h-4 text-white" />
+          <ChevronLeft className="w-4 h-4 text-zinc-700" />
         </button>
 
         <div className="text-center flex-1 mx-2">
           {rankingType === 'score' ? (
             <>
-              <h2 className="text-base font-black tracking-[0.25em] text-white leading-none uppercase">
+              <h2 className="text-base font-black tracking-[0.25em] text-zinc-900 leading-none uppercase">
                 HALL OF FAME
               </h2>
-              <p className="text-[7px] text-sky-400 uppercase tracking-[0.2em] mt-0.5 font-bold">
+              <p className="text-[7px] text-sky-600 uppercase tracking-[0.2em] mt-0.5 font-bold">
                 TOP 10 RECORDS ({difficultyFilter.toUpperCase()})
               </p>
             </>
           ) : rankingType === 'stick' ? (
             <>
-              <h2 className="text-base font-black tracking-[0.18em] text-amber-400 leading-none uppercase flex items-center justify-center gap-1.5">
+              <h2 className="text-base font-black tracking-[0.18em] text-amber-600 leading-none uppercase flex items-center justify-center gap-1.5">
                 <Flame className="w-4 h-4 text-amber-500 fill-current" /> STICK RANKING
               </h2>
-              <p className="text-[7px] text-amber-500/80 uppercase tracking-[0.2em] mt-0.5 font-bold">
+              <p className="text-[7px] text-amber-600/80 uppercase tracking-[0.2em] mt-0.5 font-bold">
                 TOP 50 ADVANCE PLAYERS
               </p>
             </>
           ) : (
             <>
-              <h2 className="text-base font-black tracking-[0.18em] text-yellow-400 leading-none uppercase flex items-center justify-center gap-1.5">
-                <Trophy className="w-4 h-4 text-yellow-400 inline" /> TROPHY RANKING
+              <h2 className="text-base font-black tracking-[0.18em] text-amber-600 leading-none uppercase flex items-center justify-center gap-1.5">
+                <Trophy className="w-4 h-4 text-yellow-500 inline" /> TROPHY RANKING
               </h2>
-              <p className="text-[7px] text-yellow-500/80 uppercase tracking-[0.2em] mt-0.5 font-bold">
+              <p className="text-[7px] text-amber-600/80 uppercase tracking-[0.2em] mt-0.5 font-bold">
                 TOP 50 CHAMPIONS
               </p>
             </>
@@ -190,22 +190,22 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
           <div className="relative shrink-0">
             <button
               onClick={() => { sounds.playClick(); setShowDropdown(!showDropdown); }}
-              className="flex items-center gap-1 rounded-full bg-zinc-800/40 border border-white/10 px-3.5 py-1.5 text-[9px] font-black uppercase text-sky-400 tracking-wider shadow-md active:scale-95 transition-all"
+              className="flex items-center gap-1 rounded-full bg-white border border-zinc-200/90 px-3.5 py-1.5 text-[9px] font-black uppercase text-sky-700 tracking-wider shadow-sm active:scale-95 transition-all"
             >
               {difficultyFilter}
-              <ChevronDown className="w-2.5 h-2.5 text-sky-400" />
+              <ChevronDown className="w-2.5 h-2.5 text-sky-700" />
             </button>
 
             {showDropdown && (
-              <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-zinc-950 border border-zinc-900 shadow-2xl z-50 overflow-hidden divide-y divide-zinc-900 animate-fadeIn">
+              <div className="absolute right-0 mt-1.5 w-32 rounded-xl bg-white border border-zinc-200 shadow-2xl z-50 overflow-hidden divide-y divide-zinc-100 animate-fadeIn">
                 {(['easy', 'medium', 'hard'] as const).map((filter) => (
                   <button
                     key={filter}
                     onClick={() => handleDropdownSelect(filter)}
                     className={`w-full text-left px-4 py-2.5 text-[9px] uppercase font-bold tracking-wider transition-colors ${
                       difficultyFilter === filter 
-                        ? 'bg-sky-500/10 text-sky-400' 
-                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                        ? 'bg-sky-50 text-sky-700' 
+                        : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
                     }`}
                   >
                     {filter} Mode
@@ -215,15 +215,15 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             )}
           </div>
         ) : (
-          <div className="shrink-0 px-2.5 py-1 rounded-full bg-zinc-900/80 border border-white/10 text-[9px] font-mono font-bold text-zinc-300">
+          <div className="shrink-0 px-2.5 py-1 rounded-full bg-white border border-zinc-200/90 text-[9px] font-mono font-bold text-zinc-700 shadow-sm">
             {rankingType === 'stick' ? (
-              <span className="text-amber-400 flex items-center gap-1">
+              <span className="text-amber-600 flex items-center gap-1">
                 <Flame className="w-3 h-3 text-amber-500 fill-current inline" />
                 {profile?.streak || profile?.sticks || 0}
               </span>
             ) : (
-              <span className="text-yellow-400 flex items-center gap-1">
-                <Trophy className="w-3 h-3 text-yellow-400 inline" />
+              <span className="text-amber-600 flex items-center gap-1">
+                <Trophy className="w-3 h-3 text-yellow-500 inline" />
                 {profile?.highScore || 0}
               </span>
             )}
@@ -264,14 +264,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 <p className="text-[9px] uppercase tracking-wider text-zinc-500">Loading Rankings...</p>
               </div>
             ) : (rankingType === 'stick' ? top50StickList : top50TrophyList).length === 0 ? (
-              <div className="text-center py-8 px-4 bg-white/5 rounded-2xl border border-white/5 my-2">
+              <div className="text-center py-8 px-4 bg-white rounded-2xl border border-zinc-200/90 shadow-sm my-2">
                 <span className="text-2xl mb-1 block">
                   {rankingType === 'stick' ? '🔥' : '🏆'}
                 </span>
-                <h4 className="text-[11px] font-black uppercase text-white mb-0.5 tracking-wider">
+                <h4 className="text-[11px] font-black uppercase text-zinc-900 mb-0.5 tracking-wider">
                   {rankingType === 'stick' ? 'No Stick Rankings Yet' : 'No Trophy Rankings Yet'}
                 </h4>
-                <p className="text-[9px] text-zinc-400 uppercase tracking-wider max-w-[220px] leading-relaxed mx-auto">
+                <p className="text-[9px] text-zinc-500 uppercase tracking-wider max-w-[220px] leading-relaxed mx-auto">
                   {isSignedIn 
                     ? (rankingType === 'stick'
                         ? 'Solve puzzles in Advance Mode to earn sticks and climb the rankings!'
@@ -286,10 +286,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 const social = getSocialInfo(entry.socialLink);
 
                 // Rank style badges for Top 3 vs other rows
-                let rankBadgeBg = 'text-zinc-500';
-                if (rankNum === 1) rankBadgeBg = 'text-yellow-400 font-extrabold';
-                else if (rankNum === 2) rankBadgeBg = 'text-zinc-300 font-extrabold';
-                else if (rankNum === 3) rankBadgeBg = 'text-amber-500 font-extrabold';
+                let rankBadgeBg = 'text-zinc-400';
+                if (rankNum === 1) rankBadgeBg = 'text-amber-500 font-extrabold';
+                else if (rankNum === 2) rankBadgeBg = 'text-zinc-500 font-extrabold';
+                else if (rankNum === 3) rankBadgeBg = 'text-amber-600 font-extrabold';
 
                 return (
                   <div
@@ -297,21 +297,21 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                     onClick={() => social && openSocialProfile(social.url)}
                     className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between shadow-sm transition-all select-none ${
                       isMe 
-                        ? 'border-emerald-500/70 bg-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.2)] ring-1 ring-emerald-500/40' 
+                        ? 'border-emerald-500/80 bg-emerald-50 shadow-[0_0_10px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40 text-zinc-900' 
                         : rankNum === 1
-                        ? 'border-yellow-500/40 bg-gradient-to-r from-yellow-500/15 via-white/5 to-white/5'
+                        ? 'border-amber-300 bg-amber-50/80 text-zinc-900'
                         : rankNum === 2
-                        ? 'border-zinc-400/30 bg-gradient-to-r from-zinc-400/10 via-white/5 to-white/5'
+                        ? 'border-zinc-300 bg-zinc-50 text-zinc-900'
                         : rankNum === 3
-                        ? 'border-amber-600/30 bg-gradient-to-r from-amber-600/10 via-white/5 to-white/5'
-                        : 'border-white/5 bg-gradient-to-r from-white/10 to-white/5'
-                    } ${social ? 'cursor-pointer hover:bg-white/15' : ''}`}
+                        ? 'border-amber-200 bg-amber-50/40 text-zinc-900'
+                        : 'border-zinc-200/90 bg-white text-zinc-900'
+                    } ${social ? 'cursor-pointer hover:bg-zinc-50' : ''}`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Rank Indicator */}
                       <div className="w-5 text-center shrink-0 flex items-center justify-center">
                         {rankNum === 1 ? (
-                          <div className="flex items-center gap-0.5 text-yellow-400 font-black text-[10px]">
+                          <div className="flex items-center gap-0.5 text-amber-500 font-black text-[10px]">
                             <Crown className="w-3 h-3 fill-current inline" />
                           </div>
                         ) : (
@@ -322,17 +322,17 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                       </div>
 
                       {/* Flag / Avatar */}
-                      <div className="w-5 h-5 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-[10px] shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] shrink-0">
                         {entry.flag || '👤'}
                       </div>
 
                       {/* Player Display Name */}
                       <span className={`text-[9.5px] tracking-wide uppercase truncate max-w-[85px] ${
                         isMe 
-                          ? 'text-emerald-400 font-black' 
+                          ? 'text-emerald-700 font-black' 
                           : rankNum === 1 
-                          ? 'text-yellow-300 font-bold' 
-                          : 'text-zinc-200 font-semibold'
+                          ? 'text-amber-900 font-bold' 
+                          : 'text-zinc-800 font-semibold'
                       }`}>
                         {entry.displayName} {isMe ? '(You)' : ''}
                       </span>
@@ -360,13 +360,13 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                     {/* Stick / Trophy count */}
                     <div className="shrink-0 ml-1 font-mono text-[10px] font-black text-right">
                       {rankingType === 'stick' ? (
-                        <span className="text-amber-400 flex items-center gap-1 justify-end">
+                        <span className="text-amber-600 flex items-center gap-1 justify-end">
                           <Flame className="w-3 h-3 text-amber-500 fill-current inline" />
                           {entry.sticks.toLocaleString()}
                         </span>
                       ) : (
-                        <span className="text-yellow-400 flex items-center gap-1 justify-end">
-                          <Trophy className="w-3 h-3 text-yellow-400 inline" />
+                        <span className="text-amber-600 flex items-center gap-1 justify-end">
+                          <Trophy className="w-3 h-3 text-yellow-500 inline" />
                           {entry.trophies.toLocaleString()}
                         </span>
                       )}
@@ -379,13 +379,13 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             /* SCORE RANKING LIST IN SIMPLE UNIFIED LIST */
             loading ? (
               <div className="flex flex-col items-center justify-center py-10">
-                <div className="w-6 h-6 rounded-full border-2 border-dashed border-zinc-600 animate-spin mb-2" />
+                <div className="w-6 h-6 rounded-full border-2 border-dashed border-zinc-400 animate-spin mb-2" />
                 <p className="text-[9px] uppercase tracking-wider text-zinc-500">Retrieving ranks...</p>
               </div>
             ) : scores.length === 0 ? (
-              <div className="text-center py-8 px-4 bg-white/5 rounded-2xl border border-white/5 my-2">
+              <div className="text-center py-8 px-4 bg-white rounded-2xl border border-zinc-200/90 shadow-sm my-2">
                 <span className="text-2xl mb-1 block">🏆</span>
-                <h4 className="text-[11px] font-black uppercase text-white mb-0.5 tracking-wider">
+                <h4 className="text-[11px] font-black uppercase text-zinc-900 mb-0.5 tracking-wider">
                   No Scores Recorded Yet
                 </h4>
                 <p className="text-[9px] text-zinc-500 uppercase tracking-wider max-w-[200px] leading-relaxed mx-auto">
@@ -398,10 +398,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 const isMe = entry.userId === profile?.uid;
                 const social = getSocialInfo(entry.socialLink);
 
-                let rankBadgeBg = 'text-zinc-500';
-                if (rankNum === 1) rankBadgeBg = 'text-yellow-400 font-extrabold';
-                else if (rankNum === 2) rankBadgeBg = 'text-zinc-300 font-extrabold';
-                else if (rankNum === 3) rankBadgeBg = 'text-amber-500 font-extrabold';
+                let rankBadgeBg = 'text-zinc-400';
+                if (rankNum === 1) rankBadgeBg = 'text-amber-500 font-extrabold';
+                else if (rankNum === 2) rankBadgeBg = 'text-zinc-500 font-extrabold';
+                else if (rankNum === 3) rankBadgeBg = 'text-amber-600 font-extrabold';
 
                 return (
                   <div
@@ -409,21 +409,21 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                     onClick={() => social && openSocialProfile(social.url)}
                     className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between shadow-sm transition-all select-none ${
                       isMe 
-                        ? 'border-emerald-500/70 bg-emerald-500/15 shadow-[0_0_10px_rgba(16,185,129,0.2)] ring-1 ring-emerald-500/40' 
+                        ? 'border-emerald-500/80 bg-emerald-50 shadow-[0_0_10px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40 text-zinc-900' 
                         : rankNum === 1
-                        ? 'border-yellow-500/40 bg-gradient-to-r from-yellow-500/15 via-white/5 to-white/5'
+                        ? 'border-amber-300 bg-amber-50/80 text-zinc-900'
                         : rankNum === 2
-                        ? 'border-zinc-400/30 bg-gradient-to-r from-zinc-400/10 via-white/5 to-white/5'
+                        ? 'border-zinc-300 bg-zinc-50 text-zinc-900'
                         : rankNum === 3
-                        ? 'border-amber-600/30 bg-gradient-to-r from-amber-600/10 via-white/5 to-white/5'
-                        : 'border-white/5 bg-gradient-to-r from-white/10 to-white/5'
-                    } ${social ? 'cursor-pointer hover:bg-white/15' : ''}`}
+                        ? 'border-amber-200 bg-amber-50/40 text-zinc-900'
+                        : 'border-zinc-200/90 bg-white text-zinc-900'
+                    } ${social ? 'cursor-pointer hover:bg-zinc-50' : ''}`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Rank Indicator */}
                       <div className="w-5 text-center shrink-0 flex items-center justify-center">
                         {rankNum === 1 ? (
-                          <div className="flex items-center gap-0.5 text-yellow-400 font-black text-[10px]">
+                          <div className="flex items-center gap-0.5 text-amber-500 font-black text-[10px]">
                             <Crown className="w-3 h-3 fill-current inline" />
                           </div>
                         ) : (
@@ -434,17 +434,17 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                       </div>
 
                       {/* Avatar */}
-                      <div className="w-5 h-5 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-[10px] shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] shrink-0">
                         👤
                       </div>
 
                       {/* Player Display Name */}
                       <span className={`text-[9.5px] tracking-wide uppercase truncate max-w-[85px] ${
                         isMe 
-                          ? 'text-emerald-400 font-black' 
+                          ? 'text-emerald-700 font-black' 
                           : rankNum === 1 
-                          ? 'text-yellow-300 font-bold' 
-                          : 'text-zinc-200 font-semibold'
+                          ? 'text-amber-900 font-bold' 
+                          : 'text-zinc-800 font-semibold'
                       }`}>
                         {entry.displayName} {isMe ? '(You)' : ''}
                       </span>
@@ -469,7 +469,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                       )}
                     </div>
 
-                    <span className="text-[10px] font-black text-sky-400 tracking-wider font-mono shrink-0 ml-1">
+                    <span className="text-[10px] font-black text-sky-700 tracking-wider font-mono shrink-0 ml-1">
                       {entry.score.toLocaleString()} pts
                     </span>
                   </div>
@@ -482,23 +482,23 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
 
       {/* 3. YOUR CURRENT POSITION CARD (DOCKED AT BOTTOM ONLY IF OUTSIDE TOP 50 / TOP 10) */}
       {!isPlayerInList && (
-        <div className="w-full mt-2 mb-1 px-3 py-2 rounded-xl bg-zinc-900/90 border border-emerald-500/30 backdrop-blur-md flex items-center justify-between shrink-0 shadow-md animate-fadeIn">
+        <div className="w-full mt-2 mb-1 px-3 py-2 rounded-xl bg-white border border-emerald-500/50 shadow-md flex items-center justify-between shrink-0 animate-fadeIn">
           <div className="flex items-center gap-2 min-w-0">
             {/* Rank Indicator */}
             <div className="w-5 text-center shrink-0">
-              <span className="text-[9px] font-mono font-bold text-zinc-400">
+              <span className="text-[9px] font-mono font-bold text-zinc-500">
                 {isSignedIn ? '>50' : '—'}
               </span>
             </div>
 
             {/* Avatar */}
-            <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-[10px] shrink-0">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-[10px] shrink-0">
               👤
             </div>
 
             {/* Name & Status */}
             <div className="min-w-0 flex items-center gap-1.5">
-              <span className="text-[9.5px] font-black uppercase text-emerald-400 tracking-wide truncate max-w-[90px]">
+              <span className="text-[9.5px] font-black uppercase text-emerald-700 tracking-wide truncate max-w-[90px]">
                 {isSignedIn ? (profile?.displayName || 'You') : 'Guest'} <span className="text-[7.5px] text-zinc-400 font-normal">(You)</span>
               </span>
               {profile && <PlayerBadge points={profile.tierPoints || 0} size="xs" shortLabel={true} />}
@@ -509,22 +509,22 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
           <div className="shrink-0 ml-1 font-mono text-[10px] font-black text-right">
             {isSignedIn ? (
               rankingType === 'stick' ? (
-                <span className="text-amber-400 flex items-center gap-1 justify-end">
+                <span className="text-amber-600 flex items-center gap-1 justify-end">
                   <Flame className="w-3 h-3 text-amber-500 fill-current inline" />
                   {(profile?.streak || profile?.sticks || 0).toLocaleString()}
                 </span>
               ) : rankingType === 'trophy' ? (
-                <span className="text-yellow-400 flex items-center gap-1 justify-end">
-                  <Trophy className="w-3 h-3 text-yellow-400 inline" />
+                <span className="text-amber-600 flex items-center gap-1 justify-end">
+                  <Trophy className="w-3 h-3 text-yellow-500 inline" />
                   {(profile?.highScore || 0).toLocaleString()}
                 </span>
               ) : (
-                <span className="text-sky-400 text-[9px] font-bold">
+                <span className="text-sky-700 text-[9px] font-bold">
                   Personal Best
                 </span>
               )
             ) : (
-              <span className="text-amber-400 text-[8px] font-bold">
+              <span className="text-amber-600 text-[8px] font-bold">
                 Sign in to rank
               </span>
             )}
@@ -533,16 +533,16 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
       )}
 
       {/* 4. BOTH RANKING BUTTONS AT THE BOTTOM OF THE RANKING LIST */}
-      <div className="w-full pt-2.5 pb-1 border-t border-white/10 grid grid-cols-2 gap-2 mt-auto shrink-0">
+      <div className="w-full pt-2.5 pb-1 border-t border-zinc-200/90 grid grid-cols-2 gap-2 mt-auto shrink-0">
         <button
           onClick={() => { 
             sounds.playClick(); 
             setRankingType(rankingType === 'stick' ? 'score' : 'stick'); 
           }}
-          className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-md active:scale-95 transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all ${
             rankingType === 'stick'
-              ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-              : 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border-amber-500/40 text-amber-300'
+              ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md'
+              : 'bg-white hover:bg-amber-50 border-zinc-200 text-amber-800'
           }`}
         >
           <Flame className={`w-3.5 h-3.5 ${rankingType === 'stick' ? 'text-zinc-950 fill-current' : 'text-amber-500 fill-current'}`} />
@@ -554,13 +554,13 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             sounds.playClick(); 
             setRankingType(rankingType === 'trophy' ? 'score' : 'trophy'); 
           }}
-          className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-md active:scale-95 transition-all ${
+          className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all ${
             rankingType === 'trophy'
-              ? 'bg-yellow-400 text-zinc-950 border-yellow-300 shadow-[0_0_12px_rgba(250,204,21,0.4)]'
-              : 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 hover:from-yellow-500/30 hover:to-amber-500/30 border-yellow-500/40 text-yellow-300'
+              ? 'bg-yellow-400 text-zinc-950 border-yellow-300 shadow-md'
+              : 'bg-white hover:bg-yellow-50 border-zinc-200 text-yellow-800'
           }`}
         >
-          <Trophy className={`w-3.5 h-3.5 ${rankingType === 'trophy' ? 'text-zinc-950' : 'text-yellow-400'}`} />
+          <Trophy className={`w-3.5 h-3.5 ${rankingType === 'trophy' ? 'text-zinc-950' : 'text-yellow-500'}`} />
           <span>{rankingType === 'trophy' ? 'Score Ranking' : 'Trophy Ranking'}</span>
         </button>
       </div>

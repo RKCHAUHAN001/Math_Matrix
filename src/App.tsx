@@ -261,58 +261,63 @@ function GameDashboard() {
   // Wait for initial Firebase auth check before rendering to prevent UI flash
   if (loading) {
     return (
-      <div className={`h-screen max-h-screen overflow-hidden flex flex-col justify-center items-center ${theme.bg} text-white select-none relative p-6`}>
-        <div className="w-10 h-10 rounded-full border-2 border-dashed border-cyan-400 animate-spin mb-4" />
-        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-cyan-400">MATH MATRIX</h2>
+      <div 
+        className="h-screen max-h-screen overflow-hidden flex flex-col justify-center items-center bg-[#f7f7f7] text-zinc-900 select-none relative p-6"
+        style={{ backgroundColor: '#f7f7f7' }}
+      >
+        <div className="w-10 h-10 rounded-full border-2 border-dashed border-indigo-600 animate-spin mb-4" />
+        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-indigo-600">MATH MATRIX</h2>
         <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1 font-mono">Initializing...</p>
       </div>
     );
   }
 
   return (
-    <div className={`h-screen max-h-screen overflow-hidden flex flex-col justify-between ${theme.bg} ${theme.text} ${theme.fontFamily} transition-colors duration-500 relative select-none p-6`}>
+    <div 
+      className="h-screen max-h-screen overflow-hidden flex flex-col justify-between bg-[#f7f7f7] text-zinc-900 font-sans transition-colors duration-500 relative select-none p-6"
+      style={{ backgroundColor: '#f7f7f7' }}
+    >
       
-      {/* Crisp white coordinate blueprint background grid decoration */}
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+      {/* Crisp coordinate blueprint background grid decoration */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
-      {/* 1. LAYERED CONCENTRIC COSMIC CIRCLE DECORATIONS */}
-      <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
-        <svg viewBox="0 0 100 100" className="w-full h-full text-blue-500">
+      {/* 1. LAYERED CONCENTRIC CIRCLE DECORATIONS */}
+      <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-20 mix-blend-multiply animate-[pulse_6s_infinite_alternate]">
+        <svg viewBox="0 0 100 100" className="w-full h-full text-blue-400">
           <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
           <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
           <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
           <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
           <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" />
           <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-          <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
+          <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeWidth="2" />
         </svg>
       </div>
 
-      <div className="absolute -bottom-24 -right-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_8s_infinite_alternate_2s]">
-        <svg viewBox="0 0 100 100" className="w-full h-full text-pink-500">
+      <div className="absolute -bottom-24 -right-24 w-[360px] h-[360px] pointer-events-none opacity-20 mix-blend-multiply animate-[pulse_8s_infinite_alternate_2s]">
+        <svg viewBox="0 0 100 100" className="w-full h-full text-indigo-400">
           <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
           <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
           <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
           <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
           <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity={0.8} />
           <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-          <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
+          <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeWidth="2" />
         </svg>
       </div>
 
-      {/* 2. TOP HEADER ROW (TRANSPARENT BG) */}
+      {/* 2. TOP HEADER ROW */}
       <header className="w-full flex justify-between items-start z-10 shrink-0">
-        {/* 1 & 2: Show Player Name & Tag/Badge in place of Game Name and Sub Name */}
         <button
           onClick={() => { sounds.playClick(); setShowTiersModal(true); }}
           className="flex flex-col items-start text-left group active:scale-95 transition-all select-none focus:outline-none"
           title="Open Math Quiz Tiers & Title Progress"
         >
           <div className="flex items-center gap-1.5">
-            <span className="text-xl font-black tracking-wide text-white leading-none font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] truncate max-w-[170px] group-hover:text-cyan-300 transition-colors">
+            <span className="text-xl font-black tracking-wide text-zinc-900 leading-none font-sans truncate max-w-[170px] group-hover:text-indigo-600 transition-colors">
               {profile ? profile.displayName : 'Player'}
             </span>
-            <span className="text-[10px] text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity">
+            <span className="text-[10px] text-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity">
               ↗
             </span>
           </div>
@@ -329,19 +334,19 @@ function GameDashboard() {
         {profile && (
           <div className="flex items-center gap-2">
             <div 
-              className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
+              className="flex items-center gap-1.5 bg-white border border-zinc-200/90 rounded-full px-3 py-1.5 shadow-sm text-xs"
               title="Sticks (Earned in Advance Mode)"
             >
               <Flame className="w-4 h-4 text-amber-500 fill-current" />
-              <span className="font-extrabold font-mono text-white">{profile.streak}</span>
+              <span className="font-extrabold font-mono text-zinc-800">{profile.streak}</span>
             </div>
 
             <div 
-              className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.4)] text-xs"
+              className="flex items-center gap-1.5 bg-white border border-zinc-200/90 rounded-full px-3 py-1.5 shadow-sm text-xs"
               title="Trophies"
             >
-              <Trophy className="w-4 h-4 text-yellow-500" />
-              <span className="font-extrabold font-mono text-yellow-400">{profile.highScore}</span>
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span className="font-extrabold font-mono text-amber-700">{profile.highScore}</span>
             </div>
           </div>
         )}
@@ -377,14 +382,14 @@ function GameDashboard() {
             
             {menuView === 'main' ? (
               <>
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] mb-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 mb-1">
                   Select Game Mode
                 </span>
 
                 {/* PLAY OFFLINE (REVEALS DIFFICULTIES SUBMENU) */}
                 <button
                   onClick={() => { sounds.playClick(); setMenuView('play_offline'); }}
-                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transform active:scale-95 transition-all text-center border border-emerald-400/20 uppercase flex items-center justify-center gap-2"
+                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.35)] transform active:scale-95 transition-all text-center border border-sky-400/20 uppercase flex items-center justify-center gap-2"
                 >
                   <WifiOff className="w-4 h-4" /> Play Offline
                 </button>
@@ -392,7 +397,7 @@ function GameDashboard() {
                 {/* PLAY ONLINE (LAUNCHES REAL-TIME MULTIPLAYER LOBBY) */}
                 <button
                   onClick={handleStartOnlineGame}
-                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(14,165,233,0.3)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.4)] transform active:scale-95 transition-all text-center border border-sky-400/20 uppercase flex items-center justify-center gap-2"
+                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.35)] transform active:scale-95 transition-all text-center border border-sky-400/20 uppercase flex items-center justify-center gap-2"
                 >
                   <Globe className="w-4 h-4" /> Play Online
                 </button>
@@ -400,15 +405,15 @@ function GameDashboard() {
                 {/* PLAY ADVANCE (NEW SYMBOLS PUZZLE SPEEDRUN MODE) */}
                 <button
                   onClick={() => { sounds.playClick(); setActiveOverlay('play_advance'); }}
-                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(168,85,247,0.3)] hover:shadow-[0_6px_20px_rgba(168,85,247,0.4)] transform active:scale-95 transition-all text-center border border-purple-400/20 uppercase flex items-center justify-center gap-2"
+                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.35)] transform active:scale-95 transition-all text-center border border-sky-400/20 uppercase flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" /> Play Advance
+                  <Sparkles className="w-4 h-4 text-sky-200" /> Play Advance
                 </button>
 
                 {/* LEVEL (100 STAGES GRID MAP SELECTOR) */}
                 <button
                   onClick={() => { sounds.playClick(); setActiveOverlay('levels'); }}
-                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(99,102,241,0.3)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.4)] transform active:scale-95 transition-all text-center border border-indigo-400/20 uppercase flex items-center justify-center gap-2"
+                  className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-sm tracking-widest shadow-[0_4px_14px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.35)] transform active:scale-95 transition-all text-center border border-sky-400/20 uppercase flex items-center justify-center gap-2"
                 >
                   <MapPin className="w-4 h-4" /> Level
                 </button>
@@ -416,14 +421,14 @@ function GameDashboard() {
             ) : (
               /* PLAY OFFLINE: EASY, MEDIUM, AND HARD DIFFICULTIES SUB-MENU */
               <div className="w-full flex flex-col items-center space-y-3 w-full animate-fadeIn">
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] mb-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 mb-1">
                   Offline Difficulties
                 </span>
 
                 {/* EASY SUB-MODE */}
                 <button
                   onClick={() => handleStartGame('easy')}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_18px_rgba(16,185,129,0.4)] transition-all uppercase text-center active:scale-95 border border-emerald-400/20"
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition-all uppercase text-center active:scale-95 border border-sky-400/20"
                 >
                   Easy Mode
                 </button>
@@ -431,7 +436,7 @@ function GameDashboard() {
                 {/* MEDIUM SUB-MODE */}
                 <button
                   onClick={() => handleStartGame('medium')}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(245,158,11,0.3)] hover:shadow-[0_6px_18px_rgba(245,158,11,0.4)] transition-all uppercase text-center active:scale-95 border border-amber-400/20"
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition-all uppercase text-center active:scale-95 border border-sky-400/20"
                 >
                   Medium Mode
                 </button>
@@ -439,7 +444,7 @@ function GameDashboard() {
                 {/* HARD SUB-MODE */}
                 <button
                   onClick={() => handleStartGame('hard')}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(244,63,94,0.3)] hover:shadow-[0_6px_18px_rgba(244,63,94,0.4)] transition-all uppercase text-center active:scale-95 border border-rose-400/20"
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition-all uppercase text-center active:scale-95 border border-sky-400/20"
                 >
                   Hard Mode
                 </button>
@@ -447,7 +452,7 @@ function GameDashboard() {
                 {/* BACK BUTTON */}
                 <button
                   onClick={() => { sounds.playClick(); setMenuView('main'); }}
-                  className="w-full py-2.5 px-6 rounded-xl text-[9px] text-zinc-500 hover:text-white uppercase font-black tracking-widest flex items-center justify-center gap-1.5 transition active:scale-95"
+                  className="w-full py-2.5 px-6 rounded-xl text-[9px] text-zinc-500 hover:text-zinc-800 uppercase font-black tracking-widest flex items-center justify-center gap-1.5 transition active:scale-95"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" /> Back to modes
                 </button>
@@ -455,9 +460,9 @@ function GameDashboard() {
             )}
 
             {gameOverScore !== null && (
-              <div className="mt-4 px-4 py-2 rounded-lg bg-black/60 border border-zinc-900/60 text-center animate-pulse shrink-0">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500">Last Score:</span>
-                <span className="text-sm font-bold font-mono text-emerald-400 ml-1">{gameOverScore} pts</span>
+              <div className="mt-4 px-4 py-2 rounded-xl bg-white border border-zinc-200/90 shadow-sm text-center animate-pulse shrink-0">
+                <span className="text-[9px] uppercase tracking-wider text-zinc-400">Last Score:</span>
+                <span className="text-sm font-bold font-mono text-emerald-600 ml-1">{gameOverScore} pts</span>
               </div>
             )}
           </div>
@@ -469,14 +474,14 @@ function GameDashboard() {
         <footer className="w-full flex justify-center gap-3 z-20 shrink-0 select-none pb-2 animate-fadeIn">
           <button
             onClick={() => { sounds.playClick(); setActiveOverlay('rankings'); }}
-            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95 hover:bg-white/15 transition-all min-w-[130px] tracking-widest"
+            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white border border-zinc-200/90 text-xs font-black uppercase text-zinc-800 shadow-sm active:scale-95 hover:bg-zinc-50 hover:border-zinc-300 transition-all min-w-[130px] tracking-widest"
           >
             🏆 Rankings
           </button>
 
           <button
             onClick={() => { sounds.playClick(); setActiveOverlay('settings'); }}
-            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] active:scale-95 hover:bg-white/15 transition-all min-w-[130px] tracking-widest"
+            className="flex items-center justify-center gap-2 rounded-full px-5 py-3 bg-white border border-zinc-200/90 text-xs font-black uppercase text-zinc-800 shadow-sm active:scale-95 hover:bg-zinc-50 hover:border-zinc-300 transition-all min-w-[130px] tracking-widest"
           >
             ⚙️ Settings
           </button>
@@ -485,8 +490,11 @@ function GameDashboard() {
 
       {/* 5. IMMERSIVE FULL-PAGE HALL OF FAME LEADERBOARD */}
       {activeOverlay === 'rankings' && (
-        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none`}>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+        <div 
+          className="fixed inset-0 z-50 flex flex-col p-4 sm:p-6 bg-[#f7f7f7] overflow-hidden select-none animate-fadeIn"
+          style={{ backgroundColor: '#f7f7f7' }}
+        >
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
           {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
           <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
@@ -521,48 +529,35 @@ function GameDashboard() {
 
       {/* 6. IMMERSIVE FULL-PAGE SETTINGS */}
       {activeOverlay === 'settings' && (
-        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none text-white animate-fadeIn`}>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+        <div 
+          className="fixed inset-0 z-50 flex flex-col p-6 bg-[#f7f7f7] overflow-hidden select-none text-zinc-900 animate-fadeIn"
+          style={{ backgroundColor: '#f7f7f7' }}
+        >
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
-          {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
-          <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-blue-500">
+          {/* BACKGROUND CONCENTRIC CIRCLES */}
+          <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-20 mix-blend-multiply animate-[pulse_6s_infinite_alternate]">
+            <svg viewBox="0 0 100 100" className="w-full h-full text-blue-400">
               <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
               <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
               <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
-              <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" />
-              <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
-
-          <div className="absolute -bottom-24 -right-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_8s_infinite_alternate_2s]">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-pink-500">
-              <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
-              <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
-              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
-              <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity={0.8} />
-              <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
             </svg>
           </div>
 
           <div className="flex-1 flex flex-col justify-start max-w-sm mx-auto w-full relative z-10 overflow-y-auto pb-4">
-            <div className="flex items-center justify-between w-full mb-8 shrink-0 relative z-30">
+            <div className="flex items-center justify-between w-full mb-6 shrink-0 relative z-30">
               <button 
                 onClick={() => { sounds.playClick(); setActiveOverlay('none'); }}
-                className="w-10 h-10 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
+                className="w-10 h-10 rounded-2xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
               >
-                <ChevronLeft className="w-5 h-5 text-zinc-300" />
+                <ChevronLeft className="w-5 h-5 text-zinc-700" />
               </button>
 
               <div className="text-center flex-1 mx-2">
-                <h2 className="text-xl font-black tracking-[0.2em] text-white leading-none uppercase">
+                <h2 className="text-xl font-black tracking-[0.2em] text-zinc-900 leading-none uppercase">
                   Preferences
                 </h2>
-                <p className="text-[8px] text-zinc-500 uppercase tracking-[0.15em] mt-1.5">
+                <p className="text-[8px] text-zinc-500 uppercase tracking-[0.15em] mt-1.5 font-bold">
                   Customize Settings
                 </p>
               </div>
@@ -572,10 +567,10 @@ function GameDashboard() {
 
             {profile ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg space-y-2">
+                <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-blue-400">👤 Nickname & Records</p>
-                    <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">Syncs Past Records</span>
+                    <p className="text-[9px] font-black uppercase tracking-wider text-indigo-600">👤 Nickname & Records</p>
+                    <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">Syncs Past Records</span>
                   </div>
                   <form onSubmit={handleUpdateName} className="space-y-2">
                     <div className="flex gap-2">
@@ -588,36 +583,36 @@ function GameDashboard() {
                         }}
                         maxLength={30}
                         minLength={2}
-                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 focus:outline-none font-mono"
+                        className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:bg-white focus:border-indigo-500 focus:outline-none font-mono"
                         placeholder="Edit nickname"
                       />
                       <button
                         type="submit"
                         disabled={nameUpdateLoading}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md transition-all active:scale-95 disabled:opacity-50 shrink-0"
                       >
                         {nameUpdateLoading ? 'Updating...' : 'Save'}
                       </button>
                     </div>
 
                     {nameUpdateError && (
-                      <p className="text-[10px] text-rose-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                      <p className="text-[10px] text-rose-600 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
                         ⚠️ {nameUpdateError}
                       </p>
                     )}
 
                     {nameUpdateSuccess && (
-                      <p className="text-[10px] text-emerald-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                      <p className="text-[10px] text-emerald-600 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
                         {nameUpdateSuccess}
                       </p>
                     )}
                   </form>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg space-y-2.5">
+                <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-pink-400">🔗 Social Media Profile Link</p>
-                    <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider">FB • X • Insta • LinkedIn • YouTube</span>
+                    <p className="text-[9px] font-black uppercase tracking-wider text-pink-600">🔗 Social Media Profile Link</p>
+                    <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">FB • X • Insta • LinkedIn • YouTube</span>
                   </div>
 
                   <form onSubmit={handleUpdateSocialLink} className="space-y-2">
@@ -629,8 +624,8 @@ function GameDashboard() {
                           setSocialLinkInput(e.target.value);
                           if (socialLinkError) setSocialLinkError(null);
                         }}
-                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-pink-500 focus:outline-none font-mono placeholder:text-zinc-600"
-                        placeholder="e.g. https://www.instagram.com/mr.rkchauhan?stkn=..."
+                        className="flex-1 bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:bg-white focus:border-pink-500 focus:outline-none font-mono placeholder:text-zinc-400"
+                        placeholder="e.g. https://www.instagram.com/..."
                       />
                       <button
                         type="submit"
@@ -641,13 +636,13 @@ function GameDashboard() {
                     </div>
 
                     {socialLinkError && (
-                      <p className="text-[10px] text-rose-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                      <p className="text-[10px] text-rose-600 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
                         ⚠️ {socialLinkError}
                       </p>
                     )}
 
                     {socialLinkSuccess && (
-                      <p className="text-[10px] text-emerald-400 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
+                      <p className="text-[10px] text-emerald-600 font-bold leading-tight flex items-center gap-1 animate-fadeIn">
                         ✓ Social link saved and linked to your ranking records!
                       </p>
                     )}
@@ -665,7 +660,7 @@ function GameDashboard() {
                             href={activeInfo.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[9px] font-bold text-pink-400 hover:text-pink-300 underline flex items-center gap-1"
+                            className="text-[9px] font-bold text-pink-600 hover:text-pink-700 underline flex items-center gap-1"
                           >
                             Test Link ↗
                           </a>
@@ -677,13 +672,13 @@ function GameDashboard() {
 
                 <ChallengeShare score={profile.highScore} difficulty={selectedDifficulty} theme={theme} />
 
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg flex justify-between items-center">
+                <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm flex justify-between items-center">
                   <div className="min-w-0">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-blue-400 mb-0.5">☁️ Account Cloud Sync</p>
-                    <p className="text-[11px] font-bold text-white uppercase truncate">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-indigo-600 mb-0.5">☁️ Account Cloud Sync</p>
+                    <p className="text-[11px] font-bold text-zinc-900 uppercase truncate">
                       {user && !user.isAnonymous ? (user.email || user.displayName || 'Synced User') : 'Guest Explorer'}
                     </p>
-                    <p className="text-[9px] text-zinc-400 truncate">
+                    <p className="text-[9px] text-zinc-500 truncate">
                       {user && !user.isAnonymous ? 'All high scores saved safely to cloud' : 'Local Cache Storage Only'}
                     </p>
                   </div>
@@ -696,11 +691,11 @@ function GameDashboard() {
                           return;
                         }
                         await logout();
-                        setGuestBypass(false); // Reset guest bypass to immediately redirect to sign-in page
+                        setGuestBypass(false);
                         sounds.playSuccess();
                         setActiveOverlay('none');
                       }}
-                      className="px-3.5 py-2 rounded-xl border border-red-950/10 hover:border-red-500/50 text-[9px] uppercase font-black tracking-wider text-red-400 hover:text-red-300 transition shrink-0 active:scale-95"
+                      className="px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-[9px] uppercase font-black tracking-wider text-red-600 transition shrink-0 active:scale-95"
                     >
                       Sign Out
                     </button>
@@ -714,7 +709,7 @@ function GameDashboard() {
                         }
                         setShowSyncModal(true);
                       }}
-                      className="px-3.5 py-2 rounded-xl border border-blue-500/30 text-[9px] uppercase font-black tracking-wider text-blue-400 hover:text-blue-300 bg-blue-500/10 transition shrink-0 active:scale-95"
+                      className="px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-[9px] uppercase font-black tracking-wider text-indigo-600 transition shrink-0 active:scale-95"
                     >
                       Sync Cloud
                     </button>
@@ -722,15 +717,15 @@ function GameDashboard() {
                 </div>
 
                 {/* ⚖️ LEGAL AND PRIVACY DOCUMENT SELECTOR */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg space-y-2">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-teal-400">⚖️ Legal & Agreements</p>
+                <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-teal-600">⚖️ Legal & Agreements</p>
                   <div className="grid grid-cols-2 gap-2">
                     <a
                       href="/privacy.html"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => sounds.playClick()}
-                      className="py-2.5 bg-zinc-900/80 hover:bg-zinc-800 border border-white/5 text-[10px] font-black uppercase tracking-widest text-zinc-300 rounded-xl transition active:scale-95 text-center flex items-center justify-center font-bold"
+                      className="py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-[10px] font-black uppercase tracking-widest text-zinc-700 rounded-xl transition active:scale-95 text-center flex items-center justify-center font-bold"
                     >
                       Privacy Policy
                     </a>
@@ -739,7 +734,7 @@ function GameDashboard() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => sounds.playClick()}
-                      className="py-2.5 bg-zinc-900/80 hover:bg-zinc-800 border border-white/5 text-[10px] font-black uppercase tracking-widest text-zinc-300 rounded-xl transition active:scale-95 text-center flex items-center justify-center font-bold"
+                      className="py-2.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-[10px] font-black uppercase tracking-widest text-zinc-700 rounded-xl transition active:scale-95 text-center flex items-center justify-center font-bold"
                     >
                       Terms of Use
                     </a>
@@ -752,11 +747,11 @@ function GameDashboard() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center py-12 px-4 text-center">
-                <div className="w-10 h-10 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-4" />
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                <div className="w-10 h-10 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin mb-4" />
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
                   Loading Settings Profile...
                 </p>
-                <p className="text-[10px] text-zinc-600 mt-2 max-w-[240px]">
+                <p className="text-[10px] text-zinc-400 mt-2 max-w-[240px]">
                   Setting up offline local storage fallback.
                 </p>
               </div>
@@ -765,35 +760,13 @@ function GameDashboard() {
         </div>
       )}
 
-      {/* 7. IMMERSIVE CANDY CRUSH STYLE FULL-PAGE LEVELS MAP */}
+      {/* 7. FULL-PAGE LEVELS VIEW */}
       {activeOverlay === 'levels' && (
-        <div className={`fixed inset-0 z-50 flex flex-col ${theme.bg} overflow-hidden select-none text-white animate-fadeIn`}>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
-
-          {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
-          <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-blue-500">
-              <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
-              <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
-              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
-              <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" />
-              <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
-
-          <div className="absolute -bottom-24 -right-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_8s_infinite_alternate_2s]">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-pink-500">
-              <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="0.1" />
-              <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="0.2" />
-              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.3" />
-              <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" strokeWidth="0.5" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.8" strokeOpacity={0.8} />
-              <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="50" cy="50" r="20" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
-            </svg>
-          </div>
+        <div 
+          className="fixed inset-0 z-50 flex flex-col bg-[#f7f7f7] overflow-hidden select-none text-zinc-900 animate-fadeIn"
+          style={{ backgroundColor: '#f7f7f7' }}
+        >
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
           <div className="flex-1 flex flex-col max-w-md mx-auto w-full h-full relative z-10 overflow-hidden shadow-2xl">
             <LevelSelector theme={theme} onClose={() => { setActiveOverlay('none'); setMenuView('main'); }} onSelectLevel={(lvl) => handleStartLevelGame(lvl)} />
@@ -803,8 +776,11 @@ function GameDashboard() {
 
       {/* 8. IMMERSIVE REAL-TIME MULTIPLAYER LOBBY (PLAY ONLINE) */}
       {activeOverlay === 'online_lobby' && (
-        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none`}>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+        <div 
+          className="fixed inset-0 z-50 flex flex-col p-6 bg-[#f7f7f7] overflow-hidden select-none"
+          style={{ backgroundColor: '#f7f7f7' }}
+        >
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
           {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
           <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
@@ -844,8 +820,11 @@ function GameDashboard() {
 
       {/* 9. PLAY ADVANCE OFFLINE GAMEPLAY SYSTEM SCREEN */}
       {activeOverlay === 'play_advance' && (
-        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none`}>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+        <div 
+          className="fixed inset-0 z-50 flex flex-col p-6 bg-[#f7f7f7] overflow-hidden select-none"
+          style={{ backgroundColor: '#f7f7f7' }}
+        >
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
           {/* BACKGROUND CONCENTRIC COSMIC CIRCLES */}
           <div className="absolute -top-24 -left-24 w-[360px] h-[360px] pointer-events-none opacity-40 mix-blend-screen animate-[pulse_6s_infinite_alternate]">
@@ -926,13 +905,16 @@ function GameDashboard() {
 
       {/* Dedicated Offline Game Over Stats Overlay */}
       {gameOverOffline !== null && (
-        <div className={`fixed inset-0 z-50 flex flex-col p-6 ${theme.bg} overflow-hidden select-none text-white animate-fadeIn`}>
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:28px_28px]"></div>
+        <div 
+          className="fixed inset-0 z-50 flex flex-col p-6 bg-[#f7f7f7] overflow-hidden select-none text-zinc-900 animate-fadeIn"
+          style={{ backgroundColor: '#f7f7f7' }}
+        >
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]"></div>
 
           <div className="flex-1 flex flex-col justify-center items-center max-w-sm mx-auto w-full relative z-10">
-            <div className="w-full rounded-3xl border border-red-500/20 bg-zinc-950/95 p-6 text-center shadow-2xl flex flex-col items-center">
+            <div className="w-full rounded-3xl border border-zinc-200/90 bg-[#f7f7f7] p-6 text-center shadow-xl flex flex-col items-center">
               
-              <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 animate-shake">
+              <div className="w-14 h-14 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-500 mb-4 animate-shake">
                 <AlertTriangle className="w-8 h-8 text-red-500" />
               </div>
 
@@ -944,9 +926,9 @@ function GameDashboard() {
               </p>
 
               {/* CURRENT RUN SCORE */}
-              <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl w-full mb-5 text-center font-mono relative overflow-hidden">
-                <div className="text-[9px] uppercase tracking-wider text-zinc-500">Your Score This Run</div>
-                <div className="text-3xl font-black text-emerald-400 mt-1">{gameOverOffline.score} <span className="text-xs font-normal text-zinc-400 font-sans">pts</span></div>
+              <div className="p-4 bg-white border border-zinc-200/90 rounded-2xl w-full mb-5 text-center font-mono relative overflow-hidden shadow-sm">
+                <div className="text-[9px] uppercase tracking-wider text-zinc-400">Your Score This Run</div>
+                <div className="text-3xl font-black text-zinc-900 mt-1">{gameOverOffline.score} <span className="text-xs font-normal text-zinc-400 font-sans">pts</span></div>
               </div>
 
               {/* ACTION BUTTONS */}
@@ -969,7 +951,7 @@ function GameDashboard() {
                     setGameOverScore(null);
                     setGameActive(true);
                   }}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-emerald-400/20"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md transition-all active:scale-95 border border-sky-400/20"
                 >
                   Play Again (Restart)
                 </button>
@@ -981,7 +963,7 @@ function GameDashboard() {
                     setGameOverScore(null);
                     setMenuView('main');
                   }}
-                  className="w-full py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white text-[10px] uppercase font-black tracking-widest transition-all active:scale-95"
+                  className="w-full py-3 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900 text-[10px] uppercase font-black tracking-widest transition-all active:scale-95 shadow-sm"
                 >
                   Back to Main Menu
                 </button>
