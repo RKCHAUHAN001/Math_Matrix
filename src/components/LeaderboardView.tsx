@@ -23,7 +23,7 @@ import { useFirebase, LeaderboardEntry } from '../context/FirebaseContext';
 import { getSocialInfo, SocialInfo } from '../utils/social';
 import sounds from '../utils/audio';
 import { PlayerBadge } from './PlayerBadge';
-import { TopPlayerEntry, isRealSignedInPlayer } from '../utils/rankings';
+import { TopPlayerEntry, isRealSignedInPlayer, getEnsuredTop10Scores } from '../utils/rankings';
 
 interface LeaderboardViewProps {
   theme: any;
@@ -58,13 +58,22 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
 
   const fetchScores = async () => {
     setLoading(true);
-    const data = await getLeaderboard(difficultyFilter);
-    const sorted = [...data]
-      .filter(entry => isRealSignedInPlayer(entry.userId, entry.displayName))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10); // Strictly show only Top 10 records
-    setScores(sorted);
-    setLoading(false);
+    try {
+      const data = await getLeaderboard(difficultyFilter);
+      // Clean and validate display names
+      const validEntries = data.map(entry => ({
+        ...entry,
+        displayName: entry.displayName?.trim() || 'Matrix Explorer'
+      }));
+      // Guarantee exactly Top 10 players for Easy, Medium, and Hard
+      const top10 = getEnsuredTop10Scores(validEntries, difficultyFilter);
+      setScores(top10);
+    } catch (err) {
+      console.error("Failed to fetch scores:", err);
+      setScores(getEnsuredTop10Scores([], difficultyFilter));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchTop50Rankings = async () => {
@@ -253,8 +262,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
         </div>
       ) : (
         <div 
-          className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-0 max-h-[500px] scroll-smooth"
-          style={{ maxHeight: '500px' }}
+          className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-0 scroll-smooth"
         >
           {(rankingType === 'stick' || rankingType === 'trophy') ? (
             /* TOP 50 LIST FOR STICKS / TROPHIES IN SIMPLE UNIFIED LIST */
@@ -487,7 +495,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             {/* Rank Indicator */}
             <div className="w-5 text-center shrink-0">
               <span className="text-[9px] font-mono font-bold text-zinc-500">
-                {isSignedIn ? '>50' : '—'}
+                {isSignedIn ? (rankingType === 'score' ? '>10' : '>50') : '—'}
               </span>
             </div>
 

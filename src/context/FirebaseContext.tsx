@@ -1038,17 +1038,17 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
-      return filtered;
+      return filtered.sort((a, b) => b.score - a.score);
     }
 
     try {
       const scoresCol = collection(db, 'scores');
-      // Set query order
-      const q = query(
-        scoresCol, 
-        orderBy('score', 'desc'), 
-        limit(20)
-      );
+      let q;
+      if (difficulty) {
+        q = query(scoresCol, where('difficulty', '==', difficulty));
+      } else {
+        q = query(scoresCol, orderBy('score', 'desc'), limit(100));
+      }
       
       const querySnap = await getDocs(q);
       const entries: LeaderboardEntry[] = [];
@@ -1057,7 +1057,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         entries.push({
           id: doc.id,
           userId: data.userId,
-          displayName: data.displayName,
+          displayName: data.displayName || 'Matrix Explorer',
           socialLink: data.socialLink || '',
           tierPoints: data.tierPoints || 0,
           score: data.score,
@@ -1067,24 +1067,24 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       });
 
-      // Filter by difficulty in js memory and guarantee ONLY top 10
+      // Filter by difficulty in memory and sort descending
       let result = entries;
       if (difficulty) {
         result = entries.filter(e => e.difficulty === difficulty);
       }
-      return result.sort((a, b) => b.score - a.score).slice(0, 10);
+      return result.sort((a, b) => b.score - a.score);
     } catch (err) {
       try {
         handleFirestoreError(err, OperationType.LIST, 'scores');
       } catch (wrappedErr) {
         console.error("Leaderboard read error:", wrappedErr);
       }
-      // Return local as backup (strictly top 10)
+      // Return local as backup
       let filtered = [...localLeaderboard];
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
-      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
+      return filtered.sort((a, b) => b.score - a.score);
     }
   };
 
