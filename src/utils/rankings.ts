@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UserProfile } from '../context/FirebaseContext';
+import { UserProfile, LeaderboardEntry } from '../context/FirebaseContext';
 
 export interface TopPlayerEntry {
   userId: string;
@@ -15,6 +15,87 @@ export interface TopPlayerEntry {
   highScore?: number;
   rank?: number;
   flag?: string;
+}
+
+/**
+ * Standard benchmark top 10 matrix champions for each difficulty category.
+ * Used to ensure the Score Ranking System always presents a complete Top 10 roster.
+ */
+export const DEFAULT_TOP10_SCORES: Record<'easy' | 'medium' | 'hard', LeaderboardEntry[]> = {
+  easy: [
+    { userId: 'champ_easy_1', displayName: 'Elena Rostova', score: 124, difficulty: 'easy', matrixSize: 3, tierPoints: 340, createdAt: '2026-01-01T00:00:00.000Z' },
+    { userId: 'champ_easy_2', displayName: 'Kenji Sato', score: 116, difficulty: 'easy', matrixSize: 3, tierPoints: 310, createdAt: '2026-01-02T00:00:00.000Z' },
+    { userId: 'champ_easy_3', displayName: 'Marcus Vance', score: 105, difficulty: 'easy', matrixSize: 3, tierPoints: 280, createdAt: '2026-01-03T00:00:00.000Z' },
+    { userId: 'champ_easy_4', displayName: 'Aria Sharma', score: 98, difficulty: 'easy', matrixSize: 3, tierPoints: 260, createdAt: '2026-01-04T00:00:00.000Z' },
+    { userId: 'champ_easy_5', displayName: 'Lucas Meyer', score: 92, difficulty: 'easy', matrixSize: 3, tierPoints: 240, createdAt: '2026-01-05T00:00:00.000Z' },
+    { userId: 'champ_easy_6', displayName: 'Chloe Dupont', score: 85, difficulty: 'easy', matrixSize: 3, tierPoints: 220, createdAt: '2026-01-06T00:00:00.000Z' },
+    { userId: 'champ_easy_7', displayName: 'Mateo Silva', score: 79, difficulty: 'easy', matrixSize: 3, tierPoints: 200, createdAt: '2026-01-07T00:00:00.000Z' },
+    { userId: 'champ_easy_8', displayName: 'Zoe Chen', score: 72, difficulty: 'easy', matrixSize: 3, tierPoints: 180, createdAt: '2026-01-08T00:00:00.000Z' },
+    { userId: 'champ_easy_9', displayName: 'Devon Reed', score: 66, difficulty: 'easy', matrixSize: 3, tierPoints: 160, createdAt: '2026-01-09T00:00:00.000Z' },
+    { userId: 'champ_easy_10', displayName: 'Sofia Rossi', score: 58, difficulty: 'easy', matrixSize: 3, tierPoints: 140, createdAt: '2026-01-10T00:00:00.000Z' }
+  ],
+  medium: [
+    { userId: 'champ_med_1', displayName: 'Elena Rostova', score: 245, difficulty: 'medium', matrixSize: 4, tierPoints: 340, createdAt: '2026-01-01T00:00:00.000Z' },
+    { userId: 'champ_med_2', displayName: 'Kenji Sato', score: 228, difficulty: 'medium', matrixSize: 4, tierPoints: 310, createdAt: '2026-01-02T00:00:00.000Z' },
+    { userId: 'champ_med_3', displayName: 'Marcus Vance', score: 212, difficulty: 'medium', matrixSize: 4, tierPoints: 280, createdAt: '2026-01-03T00:00:00.000Z' },
+    { userId: 'champ_med_4', displayName: 'Aria Sharma', score: 196, difficulty: 'medium', matrixSize: 4, tierPoints: 260, createdAt: '2026-01-04T00:00:00.000Z' },
+    { userId: 'champ_med_5', displayName: 'Lucas Meyer', score: 184, difficulty: 'medium', matrixSize: 4, tierPoints: 240, createdAt: '2026-01-05T00:00:00.000Z' },
+    { userId: 'champ_med_6', displayName: 'Chloe Dupont', score: 170, difficulty: 'medium', matrixSize: 4, tierPoints: 220, createdAt: '2026-01-06T00:00:00.000Z' },
+    { userId: 'champ_med_7', displayName: 'Mateo Silva', score: 158, difficulty: 'medium', matrixSize: 4, tierPoints: 200, createdAt: '2026-01-07T00:00:00.000Z' },
+    { userId: 'champ_med_8', displayName: 'Zoe Chen', score: 144, difficulty: 'medium', matrixSize: 4, tierPoints: 180, createdAt: '2026-01-08T00:00:00.000Z' },
+    { userId: 'champ_med_9', displayName: 'Devon Reed', score: 132, difficulty: 'medium', matrixSize: 4, tierPoints: 160, createdAt: '2026-01-09T00:00:00.000Z' },
+    { userId: 'champ_med_10', displayName: 'Sofia Rossi', score: 118, difficulty: 'medium', matrixSize: 4, tierPoints: 140, createdAt: '2026-01-10T00:00:00.000Z' }
+  ],
+  hard: [
+    { userId: 'champ_hard_1', displayName: 'Elena Rostova', score: 380, difficulty: 'hard', matrixSize: 5, tierPoints: 340, createdAt: '2026-01-01T00:00:00.000Z' },
+    { userId: 'champ_hard_2', displayName: 'Kenji Sato', score: 355, difficulty: 'hard', matrixSize: 5, tierPoints: 310, createdAt: '2026-01-02T00:00:00.000Z' },
+    { userId: 'champ_hard_3', displayName: 'Marcus Vance', score: 332, difficulty: 'hard', matrixSize: 5, tierPoints: 280, createdAt: '2026-01-03T00:00:00.000Z' },
+    { userId: 'champ_hard_4', displayName: 'Aria Sharma', score: 310, difficulty: 'hard', matrixSize: 5, tierPoints: 260, createdAt: '2026-01-04T00:00:00.000Z' },
+    { userId: 'champ_hard_5', displayName: 'Lucas Meyer', score: 290, difficulty: 'hard', matrixSize: 5, tierPoints: 240, createdAt: '2026-01-05T00:00:00.000Z' },
+    { userId: 'champ_hard_6', displayName: 'Chloe Dupont', score: 272, difficulty: 'hard', matrixSize: 5, tierPoints: 220, createdAt: '2026-01-06T00:00:00.000Z' },
+    { userId: 'champ_hard_7', displayName: 'Mateo Silva', score: 254, difficulty: 'hard', matrixSize: 5, tierPoints: 200, createdAt: '2026-01-07T00:00:00.000Z' },
+    { userId: 'champ_hard_8', displayName: 'Zoe Chen', score: 236, difficulty: 'hard', matrixSize: 5, tierPoints: 180, createdAt: '2026-01-08T00:00:00.000Z' },
+    { userId: 'champ_hard_9', displayName: 'Devon Reed', score: 218, difficulty: 'hard', matrixSize: 5, tierPoints: 160, createdAt: '2026-01-09T00:00:00.000Z' },
+    { userId: 'champ_hard_10', displayName: 'Sofia Rossi', score: 198, difficulty: 'hard', matrixSize: 5, tierPoints: 140, createdAt: '2026-01-10T00:00:00.000Z' }
+  ]
+};
+
+/**
+ * Merges recorded player scores with benchmark champion players to reliably produce
+ * the Top 10 players for the selected difficulty.
+ */
+export function buildTop10ScoreRanking(
+  recordedScores: LeaderboardEntry[],
+  difficulty: 'easy' | 'medium' | 'hard'
+): LeaderboardEntry[] {
+  const filteredRecorded = recordedScores.filter(e => e.difficulty === difficulty && e.score > 0);
+  
+  // Keep the best score per unique player
+  const bestByPlayer = new Map<string, LeaderboardEntry>();
+  for (const entry of filteredRecorded) {
+    if (!entry.displayName || entry.displayName.trim().length === 0) continue;
+    const key = (entry.userId && !entry.userId.startsWith('guest_')) ? entry.userId : entry.displayName.trim().toLowerCase();
+    const existing = bestByPlayer.get(key);
+    if (!existing || entry.score > existing.score) {
+      bestByPlayer.set(key, entry);
+    }
+  }
+
+  const defaults = DEFAULT_TOP10_SCORES[difficulty] || DEFAULT_TOP10_SCORES.easy;
+  
+  // Backfill slots up to 10 with benchmark players
+  for (const def of defaults) {
+    const key = def.displayName.trim().toLowerCase();
+    if (!bestByPlayer.has(def.userId) && !bestByPlayer.has(key)) {
+      bestByPlayer.set(def.userId, def);
+    }
+  }
+
+  // Sort strictly by score descending
+  const sorted = Array.from(bestByPlayer.values()).sort((a, b) => b.score - a.score);
+
+  // Return strictly Top 10 players
+  return sorted.slice(0, 10);
 }
 
 /**
@@ -172,101 +253,4 @@ export function getTop50TrophyRanking(
     ...player,
     rank: idx + 1
   }));
-}
-
-/**
- * Standard competitive fallback scores for each difficulty level
- * to ensure that exactly Top 10 players are always displayed in the leaderboard.
- */
-export const DEFAULT_SCORES_BY_DIFFICULTY: Record<'easy' | 'medium' | 'hard', Array<{
-  id: string;
-  userId: string;
-  displayName: string;
-  score: number;
-  tierPoints: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  matrixSize: number;
-}>> = {
-  easy: [
-    { id: 'def_e_1', userId: 'bot_alex', displayName: 'Alex Mercer', score: 620, tierPoints: 85, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_2', userId: 'bot_elena', displayName: 'Elena Rostova', score: 540, tierPoints: 72, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_3', userId: 'bot_marcus', displayName: 'Marcus Vance', score: 480, tierPoints: 64, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_4', userId: 'bot_sarah', displayName: 'Sarah Connor', score: 420, tierPoints: 55, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_5', userId: 'bot_lucas', displayName: 'Lucas Sterling', score: 370, tierPoints: 48, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_6', userId: 'bot_aria', displayName: 'Aria Stark', score: 310, tierPoints: 40, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_7', userId: 'bot_david', displayName: 'David Kim', score: 260, tierPoints: 34, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_8', userId: 'bot_zack', displayName: 'Zack Taylor', score: 210, tierPoints: 28, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_9', userId: 'bot_maya', displayName: 'Maya Lin', score: 170, tierPoints: 22, difficulty: 'easy', matrixSize: 3 },
-    { id: 'def_e_10', userId: 'bot_leo', displayName: 'Leo Walker', score: 130, tierPoints: 16, difficulty: 'easy', matrixSize: 3 },
-  ],
-  medium: [
-    { id: 'def_m_1', userId: 'bot_victor', displayName: 'Victor Creed', score: 880, tierPoints: 120, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_2', userId: 'bot_nova', displayName: 'Nova Prime', score: 790, tierPoints: 108, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_3', userId: 'bot_chloe', displayName: 'Chloe Bennett', score: 710, tierPoints: 95, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_4', userId: 'bot_kenji', displayName: 'Kenji Sato', score: 630, tierPoints: 84, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_5', userId: 'bot_rachel', displayName: 'Rachel Green', score: 560, tierPoints: 75, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_6', userId: 'bot_dante', displayName: 'Dante Alighieri', score: 490, tierPoints: 65, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_7', userId: 'bot_sam', displayName: 'Sam Fisher', score: 420, tierPoints: 56, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_8', userId: 'bot_oliver', displayName: 'Oliver Queen', score: 360, tierPoints: 48, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_9', userId: 'bot_natasha', displayName: 'Natasha Roman', score: 300, tierPoints: 40, difficulty: 'medium', matrixSize: 4 },
-    { id: 'def_m_10', userId: 'bot_peter', displayName: 'Peter Parker', score: 240, tierPoints: 32, difficulty: 'medium', matrixSize: 4 },
-  ],
-  hard: [
-    { id: 'def_h_1', userId: 'bot_cipher', displayName: 'Cipher Master', score: 1450, tierPoints: 190, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_2', userId: 'bot_quantum', displayName: 'Quantum Fox', score: 1320, tierPoints: 175, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_3', userId: 'bot_apex', displayName: 'Apex Solver', score: 1190, tierPoints: 160, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_4', userId: 'bot_ghost', displayName: 'Matrix Ghost', score: 1060, tierPoints: 142, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_5', userId: 'bot_zerocool', displayName: 'Zero Cool', score: 940, tierPoints: 126, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_6', userId: 'bot_neon', displayName: 'Neon Knight', score: 830, tierPoints: 110, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_7', userId: 'bot_vortex', displayName: 'Vortex Mind', score: 720, tierPoints: 96, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_8', userId: 'bot_shadow', displayName: 'Shadow Byte', score: 620, tierPoints: 82, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_9', userId: 'bot_echo', displayName: 'Echo Blade', score: 530, tierPoints: 70, difficulty: 'hard', matrixSize: 5 },
-    { id: 'def_h_10', userId: 'bot_titan', displayName: 'Titan Logic', score: 450, tierPoints: 60, difficulty: 'hard', matrixSize: 5 },
-  ]
-};
-
-/**
- * Ensures that the returned score rankings list always contains exactly 10 players,
- * combining real scores with fallback records if fewer than 10 scores exist.
- */
-export function getEnsuredTop10Scores<T extends {
-  id?: string;
-  userId: string;
-  displayName: string;
-  socialLink?: string;
-  tierPoints?: number;
-  score: number;
-  difficulty: 'easy' | 'medium' | 'hard' | 'insane';
-  matrixSize: number;
-  createdAt?: string;
-}>(
-  realScores: T[],
-  difficulty: 'easy' | 'medium' | 'hard'
-): T[] {
-  // 1. Sort real scores descending by score
-  const sortedReal = [...realScores].sort((a, b) => b.score - a.score);
-
-  // If we already have 10 or more real scores, return strictly the top 10
-  if (sortedReal.length >= 10) {
-    return sortedReal.slice(0, 10);
-  }
-
-  // 2. Prepare default records for this difficulty
-  const defaults = (DEFAULT_SCORES_BY_DIFFICULTY[difficulty] || []).map(def => ({
-    ...def,
-    createdAt: new Date().toISOString()
-  })) as unknown as T[];
-
-  // 3. Combine real scores and fill up to 10 with default players
-  const combined = [...sortedReal];
-  for (const def of defaults) {
-    if (combined.length >= 10) break;
-    // Don't duplicate userId if already present
-    if (!combined.some(c => c.userId === def.userId)) {
-      combined.push(def);
-    }
-  }
-
-  // 4. Return top 10 sorted descending
-  return combined.sort((a, b) => b.score - a.score).slice(0, 10);
 }

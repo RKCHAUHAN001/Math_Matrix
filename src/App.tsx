@@ -449,14 +449,6 @@ function GameDashboard() {
                   Hard Mode
                 </button>
 
-                {/* ADVANCE SUB-MODE */}
-                <button
-                  onClick={() => { sounds.playClick(); setActiveOverlay('play_advance'); }}
-                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs tracking-widest shadow-[0_4px_12px_rgba(14,165,233,0.25)] hover:shadow-[0_6px_18px_rgba(14,165,233,0.35)] transition-all uppercase text-center active:scale-95 border border-sky-400/20 flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-sky-200" /> Advance Mode
-                </button>
-
                 {/* BACK BUTTON */}
                 <button
                   onClick={() => { sounds.playClick(); setMenuView('main'); }}

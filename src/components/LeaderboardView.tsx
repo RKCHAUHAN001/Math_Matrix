@@ -23,7 +23,7 @@ import { useFirebase, LeaderboardEntry } from '../context/FirebaseContext';
 import { getSocialInfo, SocialInfo } from '../utils/social';
 import sounds from '../utils/audio';
 import { PlayerBadge } from './PlayerBadge';
-import { TopPlayerEntry, isRealSignedInPlayer } from '../utils/rankings';
+import { TopPlayerEntry, isRealSignedInPlayer, getEnsuredTop10Scores } from '../utils/rankings';
 
 interface LeaderboardViewProps {
   theme: any;
@@ -59,11 +59,9 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
   const fetchScores = async () => {
     setLoading(true);
     const data = await getLeaderboard(difficultyFilter);
-    const sorted = [...data]
-      .filter(entry => isRealSignedInPlayer(entry.userId, entry.displayName))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10); // Strictly show only Top 10 records
-    setScores(sorted);
+    // Guarantee exactly Top 10 players are loaded for the selected difficulty
+    const top10 = getEnsuredTop10Scores(data, difficultyFilter);
+    setScores(top10);
     setLoading(false);
   };
 
@@ -226,30 +224,22 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
       </header>
 
       {/* 2. SIMPLE CONTINUOUS PROFESSIONAL RANKING LIST */}
-      {!isOnline && rankingType === 'score' ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white/5 border border-white/10 rounded-3xl my-auto animate-fadeIn">
-          <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-            <WifiOff className="w-8 h-8" />
-          </div>
-          <h3 className="text-sm font-black uppercase tracking-wider text-white mb-1">
-            No Internet Connection
-          </h3>
-          <p className="text-[10px] text-zinc-400 uppercase tracking-widest max-w-[220px] leading-relaxed mb-5">
-            Global rankings require an active internet connection to load live scores.
-          </p>
+      {!isOnline && rankingType === 'score' && (
+        <div className="flex items-center justify-between px-3 py-1.5 mb-2 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-[9px] font-bold uppercase tracking-wider shrink-0">
+          <span className="flex items-center gap-1.5">
+            <WifiOff className="w-3 h-3 text-amber-600" />
+            <span>Offline — Showing local & cached Top 10</span>
+          </span>
           <button
             onClick={() => { sounds.playClick(); fetchScores(); }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all"
+            className="text-[8px] font-black uppercase text-amber-700 hover:text-amber-900 flex items-center gap-1"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Retry Connection</span>
+            <RefreshCw className="w-2.5 h-2.5" /> Retry
           </button>
         </div>
-      ) : (
-        <div 
-          className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-0 max-h-[500px] scroll-smooth"
-          style={{ maxHeight: '500px' }}
-        >
+      )}
+
+      <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5 min-h-0 scroll-smooth">
           {(rankingType === 'stick' || rankingType === 'trophy') ? (
             /* TOP 50 LIST FOR STICKS / TROPHIES IN SIMPLE UNIFIED LIST */
             loadingTop50 ? (
@@ -470,7 +460,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             )
           )}
         </div>
-      )}
 
       {/* 3. YOUR CURRENT POSITION CARD (DOCKED AT BOTTOM ONLY IF OUTSIDE TOP 50 / TOP 10) */}
       {!isPlayerInList && (
@@ -479,7 +468,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             {/* Rank Indicator */}
             <div className="w-5 text-center shrink-0">
               <span className="text-[9px] font-mono font-bold text-zinc-500">
-                {isSignedIn ? '>50' : '—'}
+                {isSignedIn ? (rankingType === 'score' ? '>10' : '>50') : '—'}
               </span>
             </div>
 

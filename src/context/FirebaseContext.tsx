@@ -22,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from '../firebase';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking } from '../utils/rankings';
+import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking, buildTop10ScoreRanking } from '../utils/rankings';
 
 export interface UserProfile {
   uid: string;
@@ -1079,22 +1079,19 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const getLeaderboard = async (difficulty?: LeaderboardEntry['difficulty']): Promise<LeaderboardEntry[]> => {
+    const diff: 'easy' | 'medium' | 'hard' = (difficulty === 'medium' || difficulty === 'hard') ? difficulty : 'easy';
+
     if (!isOnline) {
-      // Filter local leaderboard by difficulty
-      let filtered = [...localLeaderboard];
-      if (difficulty) {
-        filtered = filtered.filter(e => e.difficulty === difficulty);
-      }
-      return filtered;
+      return buildTop10ScoreRanking(localLeaderboard, diff);
     }
 
     try {
       const scoresCol = collection(db, 'scores');
-      // Set query order
+      // Query specifically by the selected difficulty with a healthy limit
       const q = query(
         scoresCol, 
-        orderBy('score', 'desc'), 
-        limit(20)
+        where('difficulty', '==', diff),
+        limit(50)
       );
       
       const querySnap = await getDocs(q);
@@ -1114,24 +1111,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       });
 
-      // Filter by difficulty in js memory and guarantee ONLY top 10
-      let result = entries;
-      if (difficulty) {
-        result = entries.filter(e => e.difficulty === difficulty);
-      }
-      return result.sort((a, b) => b.score - a.score).slice(0, 10);
+      // Merge remote scores with local leaderboard scores and benchmark champions
+      const combined = [...entries, ...localLeaderboard];
+      return buildTop10ScoreRanking(combined, diff);
     } catch (err) {
       try {
         handleFirestoreError(err, OperationType.LIST, 'scores');
       } catch (wrappedErr) {
         console.error("Leaderboard read error:", wrappedErr);
       }
-      // Return local as backup (strictly top 10)
-      let filtered = [...localLeaderboard];
-      if (difficulty) {
-        filtered = filtered.filter(e => e.difficulty === difficulty);
-      }
-      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
+      return buildTop10ScoreRanking(localLeaderboard, diff);
     }
   };
 
