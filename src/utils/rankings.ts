@@ -173,3 +173,73 @@ export function getTop50TrophyRanking(
     rank: idx + 1
   }));
 }
+
+export interface ScoreBenchmarkPlayer {
+  id: string;
+  userId: string;
+  displayName: string;
+  socialLink: string;
+  tierPoints: number;
+  score: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  matrixSize: number;
+  createdAt: string;
+}
+
+/**
+ * Provides standard benchmark leaderboard records to guarantee Top 10 display
+ * whenever fewer than 10 scores have been submitted for a given difficulty.
+ */
+export function getBenchmarkScoreLeaderboard(difficulty: 'easy' | 'medium' | 'hard'): ScoreBenchmarkPlayer[] {
+  const benchmarkData = {
+    easy: [
+      { name: 'Alex Rivera', score: 520, points: 520, url: 'https://x.com/alexrivera' },
+      { name: 'Elena Rostova', score: 480, points: 480, url: 'https://instagram.com/elenarostova' },
+      { name: 'Marcus Chen', score: 450, points: 450, url: 'https://linkedin.com/in/marcuschen' },
+      { name: 'Sofia Martinez', score: 410, points: 410, url: 'https://x.com/sofiamartinez' },
+      { name: 'Liam Vance', score: 380, points: 380, url: 'https://facebook.com/liamvance' },
+      { name: 'Aria Patel', score: 350, points: 350, url: 'https://instagram.com/ariapatel' },
+      { name: 'David Kim', score: 320, points: 320, url: 'https://youtube.com/@davidkim' },
+      { name: 'Chloe Dupont', score: 290, points: 290, url: 'https://x.com/chloedupont' },
+      { name: 'Lucas Silva', score: 260, points: 260, url: 'https://instagram.com/lucassilva' },
+      { name: 'Emma Watson', score: 230, points: 230, url: 'https://x.com/emmawatson' },
+    ],
+    medium: [
+      { name: 'Alex Rivera', score: 760, points: 760, url: 'https://x.com/alexrivera' },
+      { name: 'Elena Rostova', score: 710, points: 710, url: 'https://instagram.com/elenarostova' },
+      { name: 'Marcus Chen', score: 670, points: 670, url: 'https://linkedin.com/in/marcuschen' },
+      { name: 'Sofia Martinez', score: 630, points: 630, url: 'https://x.com/sofiamartinez' },
+      { name: 'Liam Vance', score: 590, points: 590, url: 'https://facebook.com/liamvance' },
+      { name: 'Aria Patel', score: 550, points: 550, url: 'https://instagram.com/ariapatel' },
+      { name: 'David Kim', score: 510, points: 510, url: 'https://youtube.com/@davidkim' },
+      { name: 'Chloe Dupont', score: 470, points: 470, url: 'https://x.com/chloedupont' },
+      { name: 'Lucas Silva', score: 430, points: 430, url: 'https://instagram.com/lucassilva' },
+      { name: 'Emma Watson', score: 390, points: 390, url: 'https://x.com/emmawatson' },
+    ],
+    hard: [
+      { name: 'Alex Rivera', score: 990, points: 990, url: 'https://x.com/alexrivera' },
+      { name: 'Elena Rostova', score: 940, points: 940, url: 'https://instagram.com/elenarostova' },
+      { name: 'Marcus Chen', score: 890, points: 890, url: 'https://linkedin.com/in/marcuschen' },
+      { name: 'Sofia Martinez', score: 840, points: 840, url: 'https://x.com/sofiamartinez' },
+      { name: 'Liam Vance', score: 790, points: 790, url: 'https://facebook.com/liamvance' },
+      { name: 'Aria Patel', score: 740, points: 740, url: 'https://instagram.com/ariapatel' },
+      { name: 'David Kim', score: 690, points: 690, url: 'https://youtube.com/@davidkim' },
+      { name: 'Chloe Dupont', score: 640, points: 640, url: 'https://x.com/chloedupont' },
+      { name: 'Lucas Silva', score: 590, points: 590, url: 'https://instagram.com/lucassilva' },
+      { name: 'Emma Watson', score: 540, points: 540, url: 'https://x.com/emmawatson' },
+    ]
+  };
+
+  const list = benchmarkData[difficulty] || benchmarkData.easy;
+  return list.map((item, idx) => ({
+    id: `bench_${difficulty}_${idx + 1}`,
+    userId: `usr_benchmark_${item.name.toLowerCase().replace(/\s+/g, '_')}_0${idx + 1}`,
+    displayName: item.name,
+    socialLink: item.url,
+    tierPoints: item.points,
+    score: item.score,
+    difficulty,
+    matrixSize: difficulty === 'hard' ? 4 : difficulty === 'medium' ? 4 : 3,
+    createdAt: new Date(Date.now() - (idx + 1) * 86400000).toISOString()
+  }));
+}
