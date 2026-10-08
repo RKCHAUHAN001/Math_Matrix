@@ -331,12 +331,22 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Save back to Firestore and LocalStorage
         if (isOnline) {
           try {
-            await setDoc(profileRef, {
-              ...finalProfile,
+            await updateDoc(profileRef, {
+              displayName: finalProfile.displayName,
+              socialLink: finalProfile.socialLink || '',
+              tierPoints: finalProfile.tierPoints || 0,
+              streak: finalProfile.streak || 1,
+              lastActiveDate: finalProfile.lastActiveDate,
+              highScore: finalProfile.highScore || 0,
+              sticks: finalProfile.sticks || 0,
+              trophies: finalProfile.trophies || 0,
+              theme: finalProfile.theme || 'matrix',
+              biometricsEnabled: finalProfile.biometricsEnabled || false,
+              notificationsEnabled: finalProfile.notificationsEnabled || true,
               updatedAt: serverTimestamp()
-            }, { merge: true });
+            });
           } catch (err) {
-            handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
+            handleFirestoreError(err, OperationType.UPDATE, `users/${currentUser.uid}`);
           }
         }
       } else {
@@ -415,22 +425,26 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const incrementStreakDirectly = async () => {
-    if (!profile) return;
     const today = getLocalDateString();
-    const updated: UserProfile = {
-      ...profile,
-      streak: profile.streak + 1,
-      lastActiveDate: today,
-      updatedAt: new Date().toISOString()
-    };
-    setProfile(updated);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+    let newStreak = 1;
+    setProfile(prev => {
+      if (!prev) return prev;
+      newStreak = prev.streak + 1;
+      const updated: UserProfile = {
+        ...prev,
+        streak: newStreak,
+        lastActiveDate: today,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
     if (isOnline && user) {
       try {
         const ref = doc(db, 'users', user.uid);
         await updateDoc(ref, {
-          streak: updated.streak,
+          streak: newStreak,
           lastActiveDate: today,
           updatedAt: serverTimestamp()
         });
@@ -441,16 +455,19 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const incrementTrophyDirectly = async () => {
-    if (!profile) return;
-    const nextVal = (profile.trophies ?? profile.highScore ?? 0) + 1;
-    const updated: UserProfile = {
-      ...profile,
-      highScore: nextVal,
-      trophies: nextVal,
-      updatedAt: new Date().toISOString()
-    };
-    setProfile(updated);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+    let nextVal = 1;
+    setProfile(prev => {
+      if (!prev) return prev;
+      nextVal = (prev.trophies ?? prev.highScore ?? 0) + 1;
+      const updated: UserProfile = {
+        ...prev,
+        highScore: nextVal,
+        trophies: nextVal,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
     if (isOnline && user) {
       try {
@@ -467,17 +484,19 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addSticks = async (count: number = 1): Promise<number> => {
-    if (!profile || count <= 0) return profile?.sticks || 0;
-    const currentSticks = profile.sticks || 0;
-    const newSticks = currentSticks + count;
-
-    const updatedProfile: UserProfile = {
-      ...profile,
-      sticks: newSticks,
-      updatedAt: new Date().toISOString()
-    };
-    setProfile(updatedProfile);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+    if (count <= 0) return profile?.sticks || 0;
+    let newSticks = count;
+    setProfile(prev => {
+      if (!prev) return prev;
+      newSticks = (prev.sticks || 0) + count;
+      const updatedProfile: UserProfile = {
+        ...prev,
+        sticks: newSticks,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+      return updatedProfile;
+    });
 
     if (isOnline && user) {
       try {
@@ -495,28 +514,36 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const addTierPoints = async (pointsToAdd: number): Promise<number> => {
-    if (!profile || pointsToAdd <= 0) return profile?.tierPoints || 0;
-    const currentPoints = profile.tierPoints || 0;
-    const newPoints = currentPoints + pointsToAdd;
+    if (pointsToAdd <= 0) return profile?.tierPoints || 0;
+    let newPoints = pointsToAdd;
+    let currentUid = user?.uid || profile?.uid || 'guest_user';
+    let currentDisplayName = profile?.displayName || '';
 
-    const updatedProfile: UserProfile = {
-      ...profile,
-      tierPoints: newPoints,
-      updatedAt: new Date().toISOString()
-    };
-    setProfile(updatedProfile);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+    setProfile(prev => {
+      if (!prev) return prev;
+      newPoints = (prev.tierPoints || 0) + pointsToAdd;
+      currentUid = user?.uid || prev.uid;
+      currentDisplayName = prev.displayName;
+      const updatedProfile: UserProfile = {
+        ...prev,
+        tierPoints: newPoints,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+      return updatedProfile;
+    });
 
     // Also retroactively reflect new tier points in local leaderboard entries for this player
-    const currentUid = user?.uid || profile.uid;
-    const updatedLocal = localLeaderboard.map((item) => {
-      if (item.userId === currentUid || item.displayName === profile.displayName) {
-        return { ...item, tierPoints: newPoints };
-      }
-      return item;
+    setLocalLeaderboard(prev => {
+      const updatedLocal = prev.map((item) => {
+        if (item.userId === currentUid || item.displayName === currentDisplayName) {
+          return { ...item, tierPoints: newPoints };
+        }
+        return item;
+      });
+      localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+      return updatedLocal;
     });
-    setLocalLeaderboard(updatedLocal);
-    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
 
     if (isOnline && user) {
       try {
@@ -700,10 +727,12 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateProfileTheme = async (theme: UserProfile['theme']) => {
-    if (!profile) return;
-    const updated = { ...profile, theme };
-    setProfile(updated);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+    setProfile(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, theme };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
     if (isOnline && user) {
       try {
@@ -719,10 +748,12 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateProfileBiometrics = async (enabled: boolean) => {
-    if (!profile) return;
-    const updated = { ...profile, biometricsEnabled: enabled };
-    setProfile(updated);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+    setProfile(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, biometricsEnabled: enabled };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
     if (isOnline && user) {
       try {
@@ -738,10 +769,12 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateProfileNotifications = async (enabled: boolean) => {
-    if (!profile) return;
-    const updated = { ...profile, notificationsEnabled: enabled };
-    setProfile(updated);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+    setProfile(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, notificationsEnabled: enabled };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
     if (isOnline && user) {
       try {
@@ -757,37 +790,42 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateProfileDisplayName = async (newName: string): Promise<{ success: boolean; recordsUpdated: number; error?: string }> => {
-    if (!profile) return { success: false, recordsUpdated: 0, error: 'No active profile found' };
-
     const cleanName = newName.trim();
     if (cleanName.length < 2 || cleanName.length > 30) {
       return { success: false, recordsUpdated: 0, error: 'Nickname must be between 2 and 30 characters.' };
     }
 
-    const previousName = profile.displayName;
-    const currentUid = user?.uid || profile.uid;
+    let previousName = '';
+    let currentUid = user?.uid || profile?.uid || 'guest_user';
 
-    // 1. Update Profile in memory and localStorage
-    const updatedProfile: UserProfile = {
-      ...profile,
-      displayName: cleanName,
-      updatedAt: new Date().toISOString()
-    };
-    setProfile(updatedProfile);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+    // 1. Update Profile atomically
+    setProfile(prev => {
+      if (!prev) return prev;
+      previousName = prev.displayName;
+      currentUid = user?.uid || prev.uid;
+      const updatedProfile: UserProfile = {
+        ...prev,
+        displayName: cleanName,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updatedProfile));
+      return updatedProfile;
+    });
 
     let totalUpdated = 0;
 
     // 2. Retroactively update all local leaderboard records
-    const updatedLocal = localLeaderboard.map((item) => {
-      if (item.userId === currentUid || item.displayName === previousName) {
-        totalUpdated++;
-        return { ...item, displayName: cleanName };
-      }
-      return item;
+    setLocalLeaderboard(prev => {
+      const updatedLocal = prev.map((item) => {
+        if (item.userId === currentUid || item.displayName === previousName) {
+          totalUpdated++;
+          return { ...item, displayName: cleanName };
+        }
+        return item;
+      });
+      localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+      return updatedLocal;
     });
-    setLocalLeaderboard(updatedLocal);
-    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
 
     // 3. Update pending offline scores queue if any
     try {
@@ -840,23 +878,32 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateProfileSocialLink = async (link: string): Promise<{ success: boolean; recordsUpdated: number }> => {
-    if (!profile) return { success: false, recordsUpdated: 0 };
-    const updated = { ...profile, socialLink: link };
-    setProfile(updated);
-    localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+    let currentUid = user?.uid || profile?.uid || 'guest_user';
+    let currentDisplayName = profile?.displayName || '';
+
+    setProfile(prev => {
+      if (!prev) return prev;
+      currentUid = user?.uid || prev.uid;
+      currentDisplayName = prev.displayName;
+      const updated = { ...prev, socialLink: link, updatedAt: new Date().toISOString() };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
 
     let totalUpdated = 0;
 
     // Also update any local leaderboard entries so ranking page immediately reflects it
-    const updatedLocal = localLeaderboard.map((item) => {
-      if (item.userId === (user?.uid || profile.uid) || item.displayName === profile.displayName) {
-        totalUpdated++;
-        return { ...item, socialLink: link };
-      }
-      return item;
+    setLocalLeaderboard(prev => {
+      const updatedLocal = prev.map((item) => {
+        if (item.userId === currentUid || item.displayName === currentDisplayName) {
+          totalUpdated++;
+          return { ...item, socialLink: link };
+        }
+        return item;
+      });
+      localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
+      return updatedLocal;
     });
-    setLocalLeaderboard(updatedLocal);
-    localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updatedLocal));
 
     // Update pending offline scores
     try {

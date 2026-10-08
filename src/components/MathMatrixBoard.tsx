@@ -77,7 +77,7 @@ const getFormulasForScore = (difficulty: 'easy' | 'medium' | 'hard' | 'insane', 
     if (currentScore > 200) {
       list.push(
         { size: 3, display: "([A] * [B]) / [C]", evaluate: (op) => (op[2] !== 0 ? Math.floor((op[0] * op[1]) / op[2]) : op[0] * op[1]) },
-        { size: 3, display: "([A] * ([B]) / [C])", evaluate: (op) => (op[2] !== 0 ? Math.floor((op[0] * op[1]) / op[2]) : op[0] * op[1]) }
+        { size: 3, display: "([A] + [B]) * [C]", evaluate: (op) => (op[0] + op[1]) * op[2] }
       );
     }
     return list;
@@ -171,7 +171,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   // Timer decrement ticking
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    if (isPlaying && !showLevelSuccessOverlay && !showLevelFailureOverlay) {
+    if (isPlaying && !showLevelSuccessOverlay && !showLevelFailureOverlay && !isAdPlaying) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -184,7 +184,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isPlaying, showLevelSuccessOverlay, showLevelFailureOverlay]);
+  }, [isPlaying, showLevelSuccessOverlay, showLevelFailureOverlay, isAdPlaying]);
 
   // Monitor timer completion
   useEffect(() => {

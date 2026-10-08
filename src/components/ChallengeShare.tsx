@@ -23,23 +23,14 @@ export const ChallengeShare: React.FC<ChallengeShareProps> = ({ score, difficult
     }, 2000);
   };
 
-  const shareInstagram = () => {
+  const handleShareClick = () => {
     sounds.playClick();
-    // Copy the invitation text to clipboard automatically so user can paste it directly into Direct Messages
     navigator.clipboard.writeText(shareText);
     setCopied(true);
     sounds.playSuccess();
     setTimeout(() => {
       setCopied(false);
     }, 2000);
-    // Redirect to Instagram inbox
-    window.open('https://www.instagram.com/direct/inbox/', '_blank');
-  };
-
-  const shareWhatsApp = () => {
-    sounds.playClick();
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-    window.open(url, '_blank');
   };
 
   return (
@@ -66,21 +57,27 @@ export const ChallengeShare: React.FC<ChallengeShareProps> = ({ score, difficult
       </div>
 
       <div className="flex gap-2 justify-end">
-        <button
-          onClick={shareInstagram}
+        <a
+          href="https://www.instagram.com/direct/inbox/"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleShareClick}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-zinc-800 text-[10px] uppercase font-bold text-zinc-400 hover:text-pink-500 hover:border-pink-900 transition"
           title="Copy Invite & Open Instagram Inbox"
         >
           <Instagram className="w-3.5 h-3.5" />
           Instagram
-        </button>
-        <button
-          onClick={shareWhatsApp}
+        </a>
+        <a
+          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleShareClick}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-zinc-800 text-[10px] uppercase font-bold text-zinc-400 hover:text-emerald-500 hover:border-emerald-900 transition"
         >
           <MessageCircle className="w-3.5 h-3.5" />
           WhatsApp
-        </button>
+        </a>
       </div>
     </div>
   );

@@ -97,12 +97,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
     setShowDropdown(false);
   };
 
-  const openSocialProfile = (url?: string) => {
-    if (!url) return;
-    sounds.playClick();
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   const renderSocialIcon = (platform: SocialInfo['platform'], className = "w-3 h-3") => {
     switch (platform) {
       case 'instagram':
@@ -294,7 +288,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 return (
                   <div
                     key={`${entry.userId}-${rankNum}`}
-                    onClick={() => social && openSocialProfile(social.url)}
                     className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between shadow-sm transition-all select-none ${
                       isMe 
                         ? 'border-emerald-500/80 bg-emerald-50 shadow-[0_0_10px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40 text-zinc-900' 
@@ -305,7 +298,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                         : rankNum === 3
                         ? 'border-amber-200 bg-amber-50/40 text-zinc-900'
                         : 'border-zinc-200/90 bg-white text-zinc-900'
-                    } ${social ? 'cursor-pointer hover:bg-zinc-50' : ''}`}
+                    }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Rank Indicator */}
@@ -406,7 +399,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                 return (
                   <div
                     key={`${entry.userId}-${rankNum}-${entry.score}`}
-                    onClick={() => social && openSocialProfile(social.url)}
                     className={`w-full py-2 px-3 rounded-xl border flex items-center justify-between shadow-sm transition-all select-none ${
                       isMe 
                         ? 'border-emerald-500/80 bg-emerald-50 shadow-[0_0_10px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40 text-zinc-900' 
@@ -417,7 +409,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                         : rankNum === 3
                         ? 'border-amber-200 bg-amber-50/40 text-zinc-900'
                         : 'border-zinc-200/90 bg-white text-zinc-900'
-                    } ${social ? 'cursor-pointer hover:bg-zinc-50' : ''}`}
+                    }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Rank Indicator */}

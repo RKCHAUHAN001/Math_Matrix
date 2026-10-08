@@ -426,7 +426,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
         }
 
         // Rematch triggered -> transition back to active
-        if (data.status === 'active' && onlineSubModeRef.current === 'game_over') {
+        if (data.status === 'active' && onlineSubModeRef.current === 'game_over' && !isAdPlaying) {
           sounds.playSuccess();
           setPendingRematchData(data);
           setIsAdPlaying(true);

@@ -164,9 +164,8 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
 
   // Main countdown timer
   useEffect(() => {
-    if (!isPlaying || gameOver) return;
+    if (!isPlaying || gameOver || isAdPlaying) return;
 
-    setTimeLeft(20);
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
@@ -183,7 +182,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [puzzle, isPlaying, gameOver]);
+  }, [puzzle, isPlaying, gameOver, isAdPlaying]);
 
   // Progressive difficulty logic: 3, 4, or 5 numbers based on current score or remaining time
   const getRequiredNumCount = (currScore: number, currTime: number) => {
@@ -220,6 +219,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     const numCount = getRequiredNumCount(nextScore, nextTimeLeft);
     const nextPuzzle = generateSolvableEquationAny(numCount);
     setPuzzle(nextPuzzle);
+    setTimeLeft(20);
     setUserOperators(Array(numCount - 1).fill(null));
     setActiveSlotIndex(0);
     if (isCorrect) {
@@ -283,6 +283,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
     setCombo(0);
     setRunSticks(0);
     setLives(3);
+    setTimeLeft(20);
     setGameOver(false);
     setIsPlaying(true);
     const nextPuzzle = generateSolvableEquationAny(3);
@@ -502,6 +503,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
         onAdCompleted={() => {
           setIsAdPlaying(false);
           setLives(3);
+          setTimeLeft(20);
           setGameOver(false);
           setIsPlaying(true);
           const numCount = getRequiredNumCount(score, 30);
