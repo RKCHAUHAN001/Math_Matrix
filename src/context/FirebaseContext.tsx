@@ -22,13 +22,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from '../firebase';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { 
-  TopPlayerEntry, 
-  getTop50StickRanking, 
-  getTop50TrophyRanking,
-  getBenchmarkScoreLeaderboard,
-  isRealSignedInPlayer
-} from '../utils/rankings';
+import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking } from '../utils/rankings';
 
 export interface UserProfile {
   uid: string;
@@ -1038,84 +1032,60 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const getLeaderboard = async (difficulty?: LeaderboardEntry['difficulty']): Promise<LeaderboardEntry[]> => {
-    const diff = (difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard') ? difficulty : 'easy';
-    const entries: LeaderboardEntry[] = [];
+    if (!isOnline) {
+      // Filter local leaderboard by difficulty
+      let filtered = [...localLeaderboard];
+      if (difficulty) {
+        filtered = filtered.filter(e => e.difficulty === difficulty);
+      }
+      return filtered;
+    }
 
-    if (isOnline) {
-      try {
-        const scoresCol = collection(db, 'scores');
-        let querySnap;
-        try {
-          // Direct query by specific difficulty to avoid getting crowded out by other modes
-          const q = query(
-            scoresCol, 
-            where('difficulty', '==', diff), 
-            limit(100)
-          );
-          querySnap = await getDocs(q);
-        } catch (idxErr) {
-          // Fallback if composite index or filter constraint occurs
-          querySnap = await getDocs(query(scoresCol, limit(100)));
-        }
-
-        querySnap.forEach((doc) => {
-          const data = doc.data();
-          if (!difficulty || data.difficulty === diff) {
-            entries.push({
-              id: doc.id,
-              userId: data.userId,
-              displayName: data.displayName,
-              socialLink: data.socialLink || '',
-              tierPoints: data.tierPoints || 0,
-              score: data.score,
-              difficulty: data.difficulty,
-              matrixSize: data.matrixSize,
-              createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString()
-            });
-          }
+    try {
+      const scoresCol = collection(db, 'scores');
+      // Set query order
+      const q = query(
+        scoresCol, 
+        orderBy('score', 'desc'), 
+        limit(20)
+      );
+      
+      const querySnap = await getDocs(q);
+      const entries: LeaderboardEntry[] = [];
+      querySnap.forEach((doc) => {
+        const data = doc.data();
+        entries.push({
+          id: doc.id,
+          userId: data.userId,
+          displayName: data.displayName,
+          socialLink: data.socialLink || '',
+          tierPoints: data.tierPoints || 0,
+          score: data.score,
+          difficulty: data.difficulty,
+          matrixSize: data.matrixSize,
+          createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString()
         });
-      } catch (err) {
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'scores');
-        } catch (wrappedErr) {
-          console.warn("Leaderboard read error:", wrappedErr);
-        }
+      });
+
+      // Filter by difficulty in js memory and guarantee ONLY top 10
+      let result = entries;
+      if (difficulty) {
+        result = entries.filter(e => e.difficulty === difficulty);
       }
-    }
-
-    // Merge matching local storage scores
-    const localMatches = localLeaderboard.filter(e => !difficulty || e.difficulty === diff);
-    for (const loc of localMatches) {
-      if (!entries.some(e => e.id === loc.id || (e.userId === loc.userId && e.score === loc.score))) {
-        entries.push(loc);
+      return result.sort((a, b) => b.score - a.score).slice(0, 10);
+    } catch (err) {
+      try {
+        handleFirestoreError(err, OperationType.LIST, 'scores');
+      } catch (wrappedErr) {
+        console.error("Leaderboard read error:", wrappedErr);
       }
-    }
-
-    // Keep unique real players with their personal best score on this difficulty
-    const playerBestMap = new Map<string, LeaderboardEntry>();
-    for (const entry of entries) {
-      if (entry.userId && entry.displayName && isRealSignedInPlayer(entry.userId, entry.displayName)) {
-        const existing = playerBestMap.get(entry.userId);
-        if (!existing || entry.score > existing.score) {
-          playerBestMap.set(entry.userId, entry);
-        }
+      // Return local as backup (strictly top 10)
+      let filtered = [...localLeaderboard];
+      if (difficulty) {
+        filtered = filtered.filter(e => e.difficulty === difficulty);
       }
+      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
     }
-
-    const uniquePlayers = Array.from(playerBestMap.values()).sort((a, b) => b.score - a.score);
-
-    // Guarantee full Top 10 by padding benchmark players if fewer than 10 real players exist
-    if (uniquePlayers.length < 10) {
-      const benchmarks = getBenchmarkScoreLeaderboard(diff);
-      for (const bench of benchmarks) {
-        if (uniquePlayers.length >= 10) break;
-        if (!uniquePlayers.some(p => p.userId === bench.userId || p.displayName === bench.displayName)) {
-          uniquePlayers.push(bench);
-        }
-      }
-    }
-
-    return uniquePlayers.sort((a, b) => b.score - a.score).slice(0, 10);
   };
 
   const getStickLeaderboard = async (): Promise<TopPlayerEntry[]> => {

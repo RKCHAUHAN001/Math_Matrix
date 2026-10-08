@@ -23,7 +23,7 @@ import { useFirebase, LeaderboardEntry } from '../context/FirebaseContext';
 import { getSocialInfo, SocialInfo } from '../utils/social';
 import sounds from '../utils/audio';
 import { PlayerBadge } from './PlayerBadge';
-import { TopPlayerEntry, isRealSignedInPlayer, getBenchmarkScoreLeaderboard } from '../utils/rankings';
+import { TopPlayerEntry, isRealSignedInPlayer } from '../utils/rankings';
 
 interface LeaderboardViewProps {
   theme: any;
@@ -59,23 +59,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
   const fetchScores = async () => {
     setLoading(true);
     const data = await getLeaderboard(difficultyFilter);
-    let sorted = [...data]
+    const sorted = [...data]
       .filter(entry => isRealSignedInPlayer(entry.userId, entry.displayName))
-      .sort((a, b) => b.score - a.score);
-
-    // Ensure strictly top 10 records are always loaded
-    if (sorted.length < 10) {
-      const benchmarks = getBenchmarkScoreLeaderboard(difficultyFilter);
-      for (const bench of benchmarks) {
-        if (sorted.length >= 10) break;
-        if (!sorted.some(s => s.userId === bench.userId || s.displayName === bench.displayName)) {
-          sorted.push(bench);
-        }
-      }
-      sorted = sorted.sort((a, b) => b.score - a.score);
-    }
-
-    setScores(sorted.slice(0, 10)); // Strictly show only Top 10 records
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10); // Strictly show only Top 10 records
+    setScores(sorted);
     setLoading(false);
   };
 
@@ -499,7 +487,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             {/* Rank Indicator */}
             <div className="w-5 text-center shrink-0">
               <span className="text-[9px] font-mono font-bold text-zinc-500">
-                {isSignedIn ? (rankingType === 'score' ? '>10' : '>50') : '—'}
+                {isSignedIn ? '>50' : '—'}
               </span>
             </div>
 
