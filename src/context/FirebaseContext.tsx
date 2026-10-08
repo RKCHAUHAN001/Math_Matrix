@@ -167,12 +167,17 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Load local leaderboard initially
+  // Load local leaderboard initially (cleaning out any legacy dummy records)
   useEffect(() => {
     const stored = localStorage.getItem(LOCAL_LEADERBOARD_KEY);
     if (stored) {
       try {
-        setLocalLeaderboard(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(e => e.userId && !e.userId.startsWith('bot_') && !e.id?.startsWith('def_'));
+          setLocalLeaderboard(cleaned);
+          localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(cleaned));
+        }
       } catch (e) {}
     }
   }, []);
@@ -1136,12 +1141,12 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getLeaderboard = async (difficulty?: LeaderboardEntry['difficulty']): Promise<LeaderboardEntry[]> => {
     if (!isOnline) {
-      // Filter local leaderboard by difficulty
-      let filtered = [...localLeaderboard];
+      // Filter local leaderboard by difficulty and ensure no dummy scores
+      let filtered = localLeaderboard.filter(e => e.userId && !e.userId.startsWith('bot_') && !e.id?.startsWith('def_'));
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
-      return filtered;
+      return filtered.sort((a, b) => b.score - a.score).slice(0, 10);
     }
 
     try {
@@ -1155,6 +1160,10 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const entries: LeaderboardEntry[] = [];
       querySnap.forEach((doc) => {
         const data = doc.data();
+        // Ignore any dummy / bot scores
+        if (data.userId && (data.userId.startsWith('bot_') || doc.id.startsWith('def_'))) {
+          return;
+        }
         entries.push({
           id: doc.id,
           userId: data.userId,
@@ -1176,8 +1185,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (wrappedErr) {
         console.error("Leaderboard read error:", wrappedErr);
       }
-      // Return local as backup (strictly top 10)
-      let filtered = [...localLeaderboard];
+      // Return local as backup (strictly top 10 real scores)
+      let filtered = localLeaderboard.filter(e => e.userId && !e.userId.startsWith('bot_') && !e.id?.startsWith('def_'));
       if (difficulty) {
         filtered = filtered.filter(e => e.difficulty === difficulty);
       }
