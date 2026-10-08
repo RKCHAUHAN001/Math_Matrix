@@ -1292,7 +1292,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const opponentScore = matchData ? (isPlayer1 ? (matchData.player2Score || 0) : (matchData.player1Score || 0)) : 0;
 
   return (
-    <div className="w-full flex flex-col h-full text-zinc-900 animate-fadeIn pb-2 justify-between">
+    <div className="w-full flex flex-col h-full text-white animate-fadeIn pb-2 justify-between">
       
       {/* 1. LOBBY LANDING SCREEN */}
       {onlineSubMode === 'lobby' && (
@@ -1309,14 +1309,14 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                   onClose();
                 }
               }}
-              className="w-9 h-9 rounded-xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
+              className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
             >
-              <ChevronLeft className="w-4 h-4 text-zinc-700" />
+              <ChevronLeft className="w-4 h-4 text-zinc-300" />
             </button>
 
             <div className="text-center flex-1 mx-2">
-              <h2 className="text-base font-black tracking-[0.2em] text-zinc-900 leading-none uppercase flex items-center justify-center gap-1.5">
-                <Globe className="w-4 h-4 text-blue-500 animate-pulse" /> Play Online
+              <h2 className="text-base font-black tracking-[0.2em] text-white leading-none uppercase flex items-center justify-center gap-1.5">
+                <Globe className="w-4 h-4 text-blue-400 animate-pulse" /> Play Online
               </h2>
               <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1">
                 {lobbyStep === 'choose_mode' ? 'Select Game Mode' : `${playMode === 'advance' ? 'Advance' : 'Normal'} Mode Queue`}
@@ -1352,13 +1352,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                   setPlayMode('normal');
                   setLobbyStep('choose_action');
                 }}
-                className="w-full p-5 rounded-2xl bg-white border-2 border-blue-400/40 hover:border-blue-500 hover:bg-blue-50/40 group transition-all text-left relative overflow-hidden active:scale-[0.98] shadow-sm"
+                className="w-full p-5 rounded-2xl bg-gradient-to-br from-blue-500/15 to-sky-500/5 border border-blue-500/30 hover:border-blue-400/60 hover:bg-blue-500/20 group transition-all text-left relative overflow-hidden active:scale-[0.98] shadow-lg"
               >
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-all">
-                  <Play className="w-4 h-4 fill-blue-600" />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-all">
+                  <Play className="w-4 h-4" />
                 </div>
-                <p className="text-sm font-black tracking-wider text-blue-600 uppercase">🟢 Normal Mode</p>
-                <p className="text-[10px] text-zinc-700 font-bold mt-1">Numbers Equation Puzzle</p>
+                <p className="text-sm font-black tracking-wider text-blue-400 uppercase">🟢 Normal Mode</p>
+                <p className="text-[10px] text-zinc-400 font-bold mt-1">Numbers Equation Puzzle</p>
                 <p className="text-[8px] text-zinc-500 mt-1 max-w-[210px]">The classic gameplay. Pick number cells to satisfy the target formula.</p>
               </button>
 
@@ -1369,13 +1369,13 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                   setPlayMode('advance');
                   setLobbyStep('choose_action');
                 }}
-                className="w-full p-5 rounded-2xl bg-white border-2 border-purple-400/40 hover:border-purple-500 hover:bg-purple-50/40 group transition-all text-left relative overflow-hidden active:scale-[0.98] shadow-sm"
+                className="w-full p-5 rounded-2xl bg-gradient-to-br from-purple-500/15 to-indigo-500/5 border border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/20 group transition-all text-left relative overflow-hidden active:scale-[0.98] shadow-lg"
               >
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-all">
-                  <Sparkles className="w-4 h-4 fill-purple-600" />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-all">
+                  <Sparkles className="w-4 h-4" />
                 </div>
-                <p className="text-sm font-black tracking-wider text-purple-600 uppercase">🔵 Advance Mode</p>
-                <p className="text-[10px] text-zinc-700 font-bold mt-1">PEMDAS Operator Puzzle</p>
+                <p className="text-sm font-black tracking-wider text-purple-400 uppercase">🔵 Advance Mode</p>
+                <p className="text-[10px] text-zinc-400 font-bold mt-1">PEMDAS Operator Puzzle</p>
                 <p className="text-[8px] text-zinc-500 mt-1 max-w-[210px]">Add operators to a preset numbers equation. Scales dynamically based on scores!</p>
               </button>
             </div>
@@ -1397,8 +1397,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                 }`}>
                   <Globe className="w-5 h-5 animate-spin-slow" />
                 </div>
-                <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-600' : 'text-blue-600'}`}>Random Duel</p>
-                <p className="text-[10px] text-zinc-800 font-extrabold mt-0.5">Quick Matchmaker</p>
+                <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-400' : 'text-blue-400'}`}>Random Duel</p>
+                <p className="text-[10px] text-white font-extrabold mt-0.5">Quick Matchmaker</p>
                 <p className="text-[8px] text-zinc-500 mt-1">
                   Instantly pair with an opponent on {playMode === 'advance' ? 'Advance Mode (operators)' : 'Normal Mode (numbers)'}.
                 </p>
@@ -1407,58 +1407,58 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               {/* Action 2: Create Custom Room */}
               <button
                 onClick={handleCreatePrivateRoom}
-                className={`w-full p-4 rounded-2xl bg-white border-2 hover:bg-opacity-80 group transition-all text-left relative overflow-hidden shadow-sm ${
+                className={`w-full p-4 rounded-2xl bg-gradient-to-br border hover:bg-opacity-15 group transition-all text-left relative overflow-hidden ${
                   playMode === 'advance'
-                    ? 'border-purple-300 hover:border-purple-500'
-                    : 'border-violet-300 hover:border-violet-500'
+                    ? 'from-purple-500/20 to-indigo-500/10 border-purple-500/30 hover:border-purple-400/50 hover:bg-purple-500/15'
+                    : 'from-violet-500/20 to-indigo-500/10 border-violet-500/30 hover:border-violet-400/50 hover:bg-violet-500/15'
                 }`}
               >
                 <div className={`absolute right-4 top-4 w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-all ${
-                  playMode === 'advance' ? 'bg-purple-100 text-purple-600' : 'bg-violet-100 text-violet-600'
+                  playMode === 'advance' ? 'bg-purple-500/10 text-purple-400' : 'bg-violet-500/10 text-violet-400'
                 }`}>
                   <Plus className="w-5 h-5" />
                 </div>
-                <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-600' : 'text-violet-600'}`}>Create Room</p>
-                <p className="text-[10px] text-zinc-800 font-extrabold mt-0.5">Invite your friends</p>
+                <p className={`text-xs font-black tracking-wider uppercase ${playMode === 'advance' ? 'text-purple-400' : 'text-violet-400'}`}>Create Room</p>
+                <p className="text-[10px] text-white font-extrabold mt-0.5">Invite your friends</p>
                 <p className="text-[8px] text-zinc-500 mt-1">Generate a 4-letter room code for a {playMode.toUpperCase()} mode duel.</p>
               </button>
 
               {/* Action 3: Join Custom Room */}
               <button
                 onClick={() => { sounds.playClick(); setJoinError(null); setOnlineSubMode('room_join'); }}
-                className="w-full p-4 rounded-2xl bg-white border-2 border-emerald-300 hover:border-emerald-500 group transition-all text-left relative overflow-hidden shadow-sm"
+                className="w-full p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/15 group transition-all text-left relative overflow-hidden"
               >
-                <div className="absolute right-4 top-4 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-all">
+                <div className="absolute right-4 top-4 w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-all">
                   <Key className="w-5 h-5" />
                 </div>
-                <p className="text-xs font-black tracking-wider text-emerald-600 uppercase">Join Room</p>
-                <p className="text-[10px] text-zinc-800 font-extrabold mt-0.5">Enter code</p>
+                <p className="text-xs font-black tracking-wider text-emerald-400 uppercase">Join Room</p>
+                <p className="text-[10px] text-white font-extrabold mt-0.5">Enter code</p>
                 <p className="text-[8px] text-zinc-500 mt-1">Enter code shared by a friend to jump straight into their board.</p>
               </button>
 
               {/* Action 4: Quick AI Duel Bot */}
               <button
                 onClick={handleStartBotDuel}
-                className="w-full p-3 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 transition-all text-left flex items-center justify-between group shadow-sm"
+                className="w-full p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 transition-all text-left flex items-center justify-between group"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                    playMode === 'advance' ? 'bg-purple-100 border border-purple-200 text-purple-600' : 'bg-blue-100 border border-blue-200 text-blue-600'
+                    playMode === 'advance' ? 'bg-purple-500/10 border border-purple-500/20 text-purple-400' : 'bg-blue-500/10 border border-blue-500/20 text-blue-400'
                   }`}>
                     <Bot className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-wider text-zinc-800">Duel AI Matrix Bot</p>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-zinc-300">Duel AI Matrix Bot</p>
                     <p className="text-[8px] text-zinc-500">Practice real-time speed solving in {playMode.toUpperCase()} mode</p>
                   </div>
                 </div>
-                <Sparkles className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-all" />
+                <Sparkles className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-all" />
               </button>
 
               {/* BACK BUTTON TO STEPS CHOOSE_MODE */}
               <button
                 onClick={() => { sounds.playClick(); setLobbyStep('choose_mode'); }}
-                className="w-full py-2.5 rounded-xl text-[9px] uppercase tracking-widest text-zinc-500 hover:text-zinc-900 transition-all font-black flex items-center justify-center gap-1 mt-1 active:scale-95"
+                className="w-full py-2.5 rounded-xl text-[9px] uppercase tracking-widest text-zinc-500 hover:text-white transition-all font-black flex items-center justify-center gap-1 mt-1 active:scale-95"
               >
                 <ChevronLeft className="w-3.5 h-3.5" /> Back to mode selector
               </button>
