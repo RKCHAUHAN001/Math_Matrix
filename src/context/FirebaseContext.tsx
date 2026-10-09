@@ -298,7 +298,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mergedStreak = Math.max(firestoreProfile.streak || 0, localProfile?.streak || 0);
         const mergedTierPoints = Math.max(firestoreProfile.tierPoints || 0, localProfile?.tierPoints || 0);
         const mergedSticks = Math.max(firestoreProfile.sticks || 0, localProfile?.sticks || 0);
-        const mergedTrophies = Math.max(firestoreProfile.trophies || 0, localProfile?.trophies || 0, mergedHighScore);
+        const mergedTrophies = Math.max(firestoreProfile.trophies || 0, localProfile?.trophies || 0);
         
         let resolvedName = firestoreProfile.displayName;
         if (
@@ -371,7 +371,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           lastActiveDate: localProfile?.lastActiveDate || today,
           highScore: localProfile?.highScore || 0,
           sticks: localProfile?.sticks || 0,
-          trophies: localProfile?.trophies || localProfile?.highScore || 0,
+          trophies: localProfile?.trophies || 0,
           theme: localProfile?.theme || 'matrix',
           biometricsEnabled: localProfile?.biometricsEnabled || false,
           notificationsEnabled: localProfile?.notificationsEnabled || true,
@@ -465,10 +465,9 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let nextVal = 1;
     setProfile(prev => {
       if (!prev) return prev;
-      nextVal = (prev.trophies ?? prev.highScore ?? 0) + 1;
+      nextVal = (prev.trophies || 0) + 1;
       const updated: UserProfile = {
         ...prev,
-        highScore: nextVal,
         trophies: nextVal,
         updatedAt: new Date().toISOString()
       };
@@ -480,7 +479,6 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const ref = doc(db, 'users', user.uid);
         await updateDoc(ref, {
-          highScore: nextVal,
           trophies: nextVal,
           updatedAt: serverTimestamp()
         });
@@ -966,9 +964,31 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const submitScore = async (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => {
     if (!profile || score <= 0) return;
 
-    const currentUid = user?.uid || profile.uid || 'guest_user';
+    // Resolve active authenticated user or initialize session if online
+    let activeUser = auth.currentUser || user;
+    if (isOnline && !activeUser) {
+      try {
+        const { signInAnonymously } = await import('firebase/auth');
+        const cred = await signInAnonymously(auth);
+        activeUser = cred.user;
+        setUser(cred.user);
+      } catch (authErr) {
+        console.warn("Could not auto-authenticate for score upload:", authErr);
+      }
+    }
+
+    const currentUid = activeUser?.uid || profile.uid || 'guest_user';
     const isNewHighScore = score > (profile.highScore || 0);
     const updatedHighScore = Math.max(score, profile.highScore || 0);
+
+    // Sanitize fields to guarantee 100% compliance with Firestore rules
+    const rawName = (profile.displayName || activeUser?.displayName || '').trim();
+    const safeDisplayName = (rawName.length >= 2 ? rawName : 'Player').slice(0, 30);
+    const rawLink = profile.socialLink?.trim();
+    const safeSocialLink = (rawLink && rawLink.length > 0 && rawLink.length <= 200) ? rawLink : null;
+    const safeTierPoints = typeof profile.tierPoints === 'number' && profile.tierPoints >= 0 ? profile.tierPoints : 0;
+    const safeDifficulty: LeaderboardEntry['difficulty'] = ['easy', 'medium', 'hard', 'insane'].includes(difficulty) ? difficulty : 'easy';
+    const safeMatrixSize = matrixSize === 4 ? 4 : matrixSize === 5 ? 5 : 3;
 
     // 1. Update in-memory profile and localStorage profile with high score
     if (isNewHighScore) {
@@ -977,7 +997,6 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const updated: UserProfile = {
           ...prev,
           highScore: updatedHighScore,
-          trophies: Math.max(prev.trophies || 0, updatedHighScore),
           updatedAt: new Date().toISOString()
         };
         localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
@@ -985,13 +1004,29 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       // If online and authenticated, update user profile document in Firestore
-      if (isOnline && user) {
+      if (isOnline && activeUser) {
         try {
-          const userDocRef = doc(db, 'users', user.uid);
+          const userDocRef = doc(db, 'users', activeUser.uid);
           await updateDoc(userDocRef, {
             highScore: updatedHighScore,
-            trophies: updatedHighScore,
             updatedAt: serverTimestamp()
+          }).catch(async () => {
+            await setDoc(userDocRef, {
+              uid: activeUser.uid,
+              displayName: safeDisplayName,
+              socialLink: safeSocialLink,
+              tierPoints: safeTierPoints,
+              streak: profile.streak || 1,
+              lastActiveDate: profile.lastActiveDate || getLocalDateString(),
+              highScore: updatedHighScore,
+              sticks: profile.sticks || 0,
+              trophies: profile.trophies || 0,
+              theme: profile.theme || 'matrix',
+              biometricsEnabled: profile.biometricsEnabled || false,
+              notificationsEnabled: profile.notificationsEnabled ?? true,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
           });
         } catch (err) {
           console.warn("Could not update user high score in Firestore users collection:", err);
@@ -1001,19 +1036,19 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const newScoreEntry: LeaderboardEntry = {
       userId: currentUid,
-      displayName: profile.displayName || 'Player',
-      socialLink: profile.socialLink || '',
-      tierPoints: profile.tierPoints || 0,
+      displayName: safeDisplayName,
+      socialLink: safeSocialLink || '',
+      tierPoints: safeTierPoints,
       score,
-      difficulty,
-      matrixSize,
+      difficulty: safeDifficulty,
+      matrixSize: safeMatrixSize,
       createdAt: new Date().toISOString()
     };
 
     // 2. Update local leaderboard: maintain the player's best scores
     setLocalLeaderboard(prev => {
-      const otherScores = prev.filter(e => !(e.userId === currentUid && e.difficulty === difficulty));
-      const existingUserDiffScore = prev.find(e => e.userId === currentUid && e.difficulty === difficulty);
+      const otherScores = prev.filter(e => !(e.userId === currentUid && e.difficulty === safeDifficulty));
+      const existingUserDiffScore = prev.find(e => e.userId === currentUid && e.difficulty === safeDifficulty);
       const bestScore = existingUserDiffScore ? Math.max(existingUserDiffScore.score, score) : score;
       const updated = [...otherScores, { ...newScoreEntry, score: bestScore }].sort((a, b) => b.score - a.score);
       localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(updated));
@@ -1021,14 +1056,14 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
 
     // 3. Upload to Firestore scores collection
-    if (isOnline && user) {
+    if (isOnline && activeUser) {
       try {
         const scoresCol = collection(db, 'scores');
 
         // Query all previous score records for this user
-        const qUser = query(scoresCol, where('userId', '==', user.uid));
+        const qUser = query(scoresCol, where('userId', '==', activeUser.uid));
         const snapUser = await getDocs(qUser);
-        const existingDiffDocs = snapUser.docs.filter(d => d.data().difficulty === difficulty);
+        const existingDiffDocs = snapUser.docs.filter(d => d.data().difficulty === safeDifficulty);
         const currentMaxScore = existingDiffDocs.reduce((max, d) => Math.max(max, d.data().score || 0), 0);
 
         if (existingDiffDocs.length === 0 || score > currentMaxScore) {
@@ -1039,15 +1074,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           // Write new high score document to Firestore scores collection
           await addDoc(scoresCol, {
-            userId: user.uid,
-            displayName: profile.displayName || 'Player',
-            socialLink: profile.socialLink || null,
-            tierPoints: profile.tierPoints || 0,
+            userId: activeUser.uid,
+            displayName: safeDisplayName,
+            socialLink: safeSocialLink,
+            tierPoints: safeTierPoints,
             score,
-            difficulty,
-            matrixSize,
+            difficulty: safeDifficulty,
+            matrixSize: safeMatrixSize,
             createdAt: serverTimestamp()
           });
+          console.log(`High score (${score}) for ${safeDifficulty} uploaded successfully to database.`);
         }
       } catch (err) {
         console.error("Failed to upload score to Firestore scores collection:", err);
@@ -1058,8 +1094,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const pending = localStorage.getItem(PENDING_SYNC_KEY);
         const pendingList: LeaderboardEntry[] = pending ? JSON.parse(pending) : [];
-        const otherPending = pendingList.filter(p => p.difficulty !== difficulty);
-        const existingPending = pendingList.find(p => p.difficulty === difficulty);
+        const otherPending = pendingList.filter(p => p.difficulty !== safeDifficulty);
+        const existingPending = pendingList.find(p => p.difficulty === safeDifficulty);
         const bestPending = existingPending ? Math.max(existingPending.score, score) : score;
         otherPending.push({ ...newScoreEntry, score: bestPending });
         localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(otherPending));
@@ -1070,7 +1106,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const syncPendingData = async () => {
-    if (!isOnline || !user) return;
+    const activeUser = auth.currentUser || user;
+    if (!isOnline || !activeUser) return;
     const pending = localStorage.getItem(PENDING_SYNC_KEY);
     if (!pending) return;
 
@@ -1079,17 +1116,26 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (pendingList.length === 0) return;
 
       const scoresCol = collection(db, 'scores');
-      const qUser = query(scoresCol, where('userId', '==', user.uid));
+      const qUser = query(scoresCol, where('userId', '==', activeUser.uid));
       const snapUser = await getDocs(qUser);
 
       let highestPending = 0;
+
+      const rawName = (profile?.displayName || activeUser.displayName || '').trim();
+      const safeDisplayName = (rawName.length >= 2 ? rawName : 'Player').slice(0, 30);
+      const rawLink = profile?.socialLink?.trim();
+      const safeSocialLink = (rawLink && rawLink.length > 0 && rawLink.length <= 200) ? rawLink : null;
 
       for (const entry of pendingList) {
         if (entry.score > highestPending) {
           highestPending = entry.score;
         }
 
-        const existingDiffDocs = snapUser.docs.filter(d => d.data().difficulty === entry.difficulty);
+        const safeDifficulty = ['easy', 'medium', 'hard', 'insane'].includes(entry.difficulty) ? entry.difficulty : 'easy';
+        const safeMatrixSize = entry.matrixSize === 4 ? 4 : entry.matrixSize === 5 ? 5 : 3;
+        const safeTierPoints = typeof entry.tierPoints === 'number' && entry.tierPoints >= 0 ? entry.tierPoints : 0;
+
+        const existingDiffDocs = snapUser.docs.filter(d => d.data().difficulty === safeDifficulty);
         const currentMaxScore = existingDiffDocs.reduce((max, d) => Math.max(max, d.data().score || 0), 0);
 
         if (existingDiffDocs.length === 0 || entry.score > currentMaxScore) {
@@ -1098,13 +1144,13 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
 
           await addDoc(scoresCol, {
-            userId: user.uid,
-            displayName: profile?.displayName || user.displayName || 'Player',
-            socialLink: profile?.socialLink || null,
-            tierPoints: profile?.tierPoints || entry.tierPoints || 0,
+            userId: activeUser.uid,
+            displayName: safeDisplayName,
+            socialLink: safeSocialLink,
+            tierPoints: profile?.tierPoints || safeTierPoints,
             score: entry.score,
-            difficulty: entry.difficulty,
-            matrixSize: entry.matrixSize,
+            difficulty: safeDifficulty,
+            matrixSize: safeMatrixSize,
             createdAt: serverTimestamp()
           });
         }
@@ -1116,17 +1162,15 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (!prev) return prev;
           const updated = {
             ...prev,
-            highScore: Math.max(prev.highScore || 0, highestPending),
-            trophies: Math.max(prev.trophies || 0, highestPending)
+            highScore: Math.max(prev.highScore || 0, highestPending)
           };
           localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
           return updated;
         });
 
-        const userDocRef = doc(db, 'users', user.uid);
+        const userDocRef = doc(db, 'users', activeUser.uid);
         await updateDoc(userDocRef, {
           highScore: highestPending,
-          trophies: highestPending,
           updatedAt: serverTimestamp()
         }).catch(() => {});
       }
@@ -1207,8 +1251,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             displayName: dat.displayName || '',
             socialLink: dat.socialLink || '',
             tierPoints: dat.tierPoints || 0,
-            sticks: dat.streak ?? dat.sticks ?? 0,
-            trophies: dat.highScore ?? dat.trophies ?? 0
+            sticks: dat.sticks ?? 0,
+            trophies: dat.trophies ?? 0
           };
         });
       } catch (e) {
@@ -1232,8 +1276,8 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             displayName: dat.displayName || '',
             socialLink: dat.socialLink || '',
             tierPoints: dat.tierPoints || 0,
-            sticks: dat.streak ?? dat.sticks ?? 0,
-            trophies: dat.highScore ?? dat.trophies ?? 0
+            sticks: dat.sticks ?? 0,
+            trophies: dat.trophies ?? 0
           };
         });
       } catch (e) {

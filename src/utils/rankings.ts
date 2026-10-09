@@ -91,7 +91,7 @@ export function getTop50StickRanking(
         socialLink: cu.socialLink || '',
         tierPoints: cu.tierPoints || 0,
         sticks: cu.sticks || 0,
-        trophies: cu.trophies || cu.highScore || 0
+        trophies: cu.trophies || 0
       });
     }
   });
@@ -103,8 +103,8 @@ export function getTop50StickRanking(
       displayName: profile.displayName,
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
-      sticks: profile.streak || profile.sticks || 0,
-      trophies: profile.trophies ?? profile.highScore ?? 0
+      sticks: profile.sticks || 0,
+      trophies: profile.trophies || 0
     });
   }
 
@@ -142,7 +142,7 @@ export function getTop50TrophyRanking(
         socialLink: cu.socialLink || '',
         tierPoints: cu.tierPoints || 0,
         sticks: cu.sticks || 0,
-        trophies: cu.trophies || cu.highScore || 0
+        trophies: cu.trophies || 0
       });
     }
   });
@@ -154,8 +154,8 @@ export function getTop50TrophyRanking(
       displayName: profile.displayName,
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
-      sticks: profile.streak || profile.sticks || 0,
-      trophies: profile.trophies ?? profile.highScore ?? 0
+      sticks: profile.sticks || 0,
+      trophies: profile.trophies || 0
     });
   }
 

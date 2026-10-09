@@ -90,7 +90,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
 
   useEffect(() => {
     fetchTop50Rankings();
-  }, [isOnline, profile?.streak, profile?.sticks, profile?.highScore]);
+  }, [isOnline, profile?.sticks, profile?.trophies, profile?.highScore]);
 
   const handleDropdownSelect = (val: 'easy' | 'medium' | 'hard') => {
     sounds.playClick();
@@ -214,12 +214,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
             {rankingType === 'stick' ? (
               <span className="text-amber-600 flex items-center gap-1">
                 <Flame className="w-3 h-3 text-amber-500 fill-current inline" />
-                {profile?.streak || profile?.sticks || 0}
+                {profile?.sticks || 0}
               </span>
             ) : (
               <span className="text-amber-600 flex items-center gap-1">
                 <Trophy className="w-3 h-3 text-yellow-500 inline" />
-                {profile?.highScore || 0}
+                {profile?.trophies || 0}
               </span>
             )}
           </div>
@@ -495,12 +495,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
               rankingType === 'stick' ? (
                 <span className="text-amber-600 flex items-center gap-1 justify-end">
                   <Flame className="w-3 h-3 text-amber-500 fill-current inline" />
-                  {(profile?.streak || profile?.sticks || 0).toLocaleString()}
+                  {(profile?.sticks || 0).toLocaleString()}
                 </span>
               ) : rankingType === 'trophy' ? (
                 <span className="text-amber-600 flex items-center gap-1 justify-end">
                   <Trophy className="w-3 h-3 text-yellow-500 inline" />
-                  {(profile?.highScore || 0).toLocaleString()}
+                  {(profile?.trophies || 0).toLocaleString()}
                 </span>
               ) : (
                 <span className="text-sky-700 text-[9px] font-bold">

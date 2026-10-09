@@ -138,7 +138,7 @@ const generateSolvableEquationAny = (numCount: number) => {
 };
 
 export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExit }) => {
-  const { submitScore, addTierPoints, addSticks, incrementStreakDirectly, profile } = useFirebase();
+  const { submitScore, addTierPoints, addSticks, profile } = useFirebase();
 
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [score, setScore] = useState<number>(0);
@@ -252,7 +252,6 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
         // Advance Mode: 2 tier points each puzzle
         addTierPoints(2);
         // Player gets 1 stick for each puzzle solved in Advance Mode!
-        incrementStreakDirectly();
         addSticks(1);
         setRunSticks(prev => prev + 1);
         const scoreGain = 10 + (combo * 2);
@@ -334,7 +333,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
           <div className="flex flex-col items-center">
             <span className="text-[7px] text-amber-600 uppercase tracking-wider font-bold">Sticks</span>
             <span className="text-xs font-black text-amber-600 font-mono flex items-center justify-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> {(profile?.streak || profile?.sticks || 0)}
+              <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> {(profile?.sticks || 0)}
             </span>
           </div>
 
@@ -456,7 +455,7 @@ export const AdvanceModeBoard: React.FC<AdvanceModeBoardProps> = ({ theme, onExi
                 <span className="text-amber-600 flex items-center gap-1 font-bold">
                   <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" /> Sticks Earned:
                 </span>
-                <span className="text-amber-600 font-bold">+{runSticks} (Total: {profile?.streak || profile?.sticks || 0})</span>
+                <span className="text-amber-600 font-bold">+{runSticks} (Total: {profile?.sticks || 0})</span>
               </div>
             </div>
 

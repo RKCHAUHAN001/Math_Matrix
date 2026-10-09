@@ -106,7 +106,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   isOnlineMode = false,
   initialScore = 0
 }) => {
-  const { submitScore, incrementStreakDirectly, addTierPoints } = useFirebase();
+  const { submitScore, addTierPoints } = useFirebase();
 
   // Handle active level number
   const [currentLevelNum, setCurrentLevelNum] = useState<number | undefined>(initialLevelNumber);
@@ -127,7 +127,8 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
   // Game states
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [grid, setGrid] = useState<number[]>([]);
-  const [score, setScore] = useState<number>(0);
+  const [score, setScore] = useState<number>(initialScore);
+  const scoreRef = useRef<number>(initialScore);
   const [combo, setCombo] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number>(() => getPuzzleTimeLimit(initialDifficulty));
   const [target, setTarget] = useState<number>(0);
@@ -212,6 +213,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
 
     sounds.playSuccess();
     setScore(initialScore);
+    scoreRef.current = initialScore;
     setCombo(0);
     setLives(3); // Reset lives back to 3
     setSkipsLeft(3); // Reset skips back to 3
@@ -230,9 +232,10 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
     sounds.playFailure();
     if (timerRef.current) clearInterval(timerRef.current);
     
+    const finalScore = Math.max(score, scoreRef.current);
     // In standard / online play, write highscore to firebase database
-    submitScore(score, activeDifficulty, gridDim);
-    onGameOver(score);
+    submitScore(finalScore, activeDifficulty, gridDim);
+    onGameOver(finalScore);
   };
 
   const generateBoardAndEquation = (forcedScore?: number) => {
@@ -353,6 +356,7 @@ export const MathMatrixBoard: React.FC<MathMatrixBoardProps> = ({
         sounds.playSuccess();
         const scoreGain = 10 + (combo * 2);
         const nextScore = score + scoreGain;
+        scoreRef.current = nextScore;
         setScore(nextScore);
         setCombo(prev => prev + 1);
         setSolvedCount(prev => prev + 1);

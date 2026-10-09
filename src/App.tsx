@@ -338,15 +338,15 @@ function GameDashboard() {
               title="Sticks (Earned in Advance Mode)"
             >
               <Flame className="w-4 h-4 text-amber-500 fill-current" />
-              <span className="font-extrabold font-mono text-zinc-800">{profile.streak}</span>
+              <span className="font-extrabold font-mono text-zinc-800">{profile.sticks || 0}</span>
             </div>
 
             <div 
               className="flex items-center gap-1.5 bg-white border border-zinc-200/90 rounded-full px-3 py-1.5 shadow-sm text-xs"
-              title="Trophies"
+              title="Trophies (Earned by winning Online Matches)"
             >
               <Trophy className="w-4 h-4 text-amber-500" />
-              <span className="font-extrabold font-mono text-amber-700">{profile.highScore}</span>
+              <span className="font-extrabold font-mono text-amber-700">{profile.trophies || 0}</span>
             </div>
           </div>
         )}

@@ -4,7 +4,7 @@ import sounds from '../utils/audio';
 
 interface ChallengeShareProps {
   score: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'easy' | 'medium' | 'hard' | 'insane';
   theme: any;
 }
 

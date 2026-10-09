@@ -372,8 +372,11 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           setOnlineSubMode('game_over');
           if (finalMatch.winnerId === currentUid) {
             sounds.playSuccess();
-            incrementTrophyDirectly();
-            addTierPoints(10); // Online Match Win: 10 points
+            if (!trophyAwarded) {
+              setTrophyAwarded(true);
+              incrementTrophyDirectly();
+              addTierPoints(10); // Online Match Win: 10 points
+            }
           } else {
             sounds.playFailure();
           }
@@ -489,6 +492,11 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
             abandonedByOpponent: true
           });
           setOnlineSubMode('game_over');
+          if (!trophyAwarded) {
+            setTrophyAwarded(true);
+            incrementTrophyDirectly();
+            addTierPoints(10);
+          }
         }
       }
     }, (err) => {
