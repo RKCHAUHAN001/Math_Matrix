@@ -31,9 +31,10 @@ service cloud.firestore {
     // Helper functions for entity validation
     function isValidUserProfile(data) {
       return data.keys().hasAll(['uid', 'displayName', 'streak', 'lastActiveDate', 'highScore', 'theme', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['uid', 'displayName', 'socialLink', 'tierPoints', 'streak', 'lastActiveDate', 'highScore', 'sticks', 'trophies', 'theme', 'biometricsEnabled', 'notificationsEnabled', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'socialLink', 'tierPoints', 'streak', 'lastActiveDate', 'highScore', 'sticks', 'trophies', 'theme', 'biometricsEnabled', 'notificationsEnabled', 'createdAt', 'updatedAt'])
         && data.uid is string && data.uid.size() <= 128
         && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 30
+        && (!data.keys().contains('photoURL') || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1000))
         && (!data.keys().contains('socialLink') || data.socialLink == null || (data.socialLink is string && data.socialLink.size() <= 200))
         && (!data.keys().contains('tierPoints') || data.tierPoints == null || (data.tierPoints is number && data.tierPoints >= 0))
         && (!data.keys().contains('sticks') || data.sticks == null || (data.sticks is number && data.sticks >= 0))
@@ -48,9 +49,10 @@ service cloud.firestore {
 
     function isValidLeaderboardScore(data) {
       return data.keys().hasAll(['userId', 'displayName', 'score', 'difficulty', 'matrixSize', 'createdAt'])
-        && data.keys().hasOnly(['userId', 'displayName', 'socialLink', 'tierPoints', 'score', 'difficulty', 'matrixSize', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'displayName', 'photoURL', 'socialLink', 'tierPoints', 'score', 'difficulty', 'matrixSize', 'createdAt'])
         && data.userId is string && data.userId.size() <= 128
         && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 30
+        && (!data.keys().contains('photoURL') || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 1000))
         && (!data.keys().contains('socialLink') || data.socialLink == null || (data.socialLink is string && data.socialLink.size() <= 200))
         && (!data.keys().contains('tierPoints') || data.tierPoints == null || (data.tierPoints is number && data.tierPoints >= 0))
         && data.score is number && data.score >= 0
@@ -113,7 +115,7 @@ service cloud.firestore {
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
         && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'socialLink', 'tierPoints', 'streak', 'lastActiveDate', 'highScore', 'sticks', 'trophies', 'theme', 'biometricsEnabled', 'notificationsEnabled', 'updatedAt'])
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'socialLink', 'tierPoints', 'streak', 'lastActiveDate', 'highScore', 'sticks', 'trophies', 'theme', 'biometricsEnabled', 'notificationsEnabled', 'updatedAt'])
         );
       
       allow delete: if false;
@@ -133,8 +135,9 @@ service cloud.firestore {
       allow delete: if isSignedIn();
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
-        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'socialLink', 'tierPoints'])
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'socialLink', 'tierPoints'])
         && (!incoming().diff(existing()).affectedKeys().contains('displayName') || (incoming().displayName is string && incoming().displayName.size() >= 2 && incoming().displayName.size() <= 30))
+        && (!incoming().diff(existing()).affectedKeys().contains('photoURL') || incoming().photoURL == null || (incoming().photoURL is string && incoming().photoURL.size() <= 1000))
         && (!incoming().diff(existing()).affectedKeys().contains('socialLink') || incoming().socialLink == null || (incoming().socialLink is string && incoming().socialLink.size() <= 200))
         && (!incoming().diff(existing()).affectedKeys().contains('tierPoints') || incoming().tierPoints == null || (incoming().tierPoints is number && incoming().tierPoints >= 0));
     }

@@ -24,6 +24,7 @@ import { getSocialInfo, SocialInfo } from '../utils/social';
 import sounds from '../utils/audio';
 import { PlayerBadge } from './PlayerBadge';
 import { TopPlayerEntry, isRealSignedInPlayer } from '../utils/rankings';
+import { UserAvatar } from './UserAvatar';
 
 interface LeaderboardViewProps {
   theme: any;
@@ -308,9 +309,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                       </div>
 
                       {/* Flag / Avatar */}
-                      <div className="w-5 h-5 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] shrink-0">
-                        {entry.flag || '👤'}
-                      </div>
+                      <UserAvatar
+                        photoURL={entry.photoURL}
+                        name={entry.displayName}
+                        size="xs"
+                      />
 
                       {/* Player Display Name */}
                       <span className={`text-[9.5px] tracking-wide uppercase truncate max-w-[85px] ${
@@ -419,9 +422,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ theme, onClose
                       </div>
 
                       {/* Avatar */}
-                      <div className="w-5 h-5 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] shrink-0">
-                        👤
-                      </div>
+                      <UserAvatar
+                        photoURL={entry.photoURL}
+                        name={entry.displayName}
+                        size="xs"
+                      />
 
                       {/* Player Display Name */}
                       <span className={`text-[9.5px] tracking-wide uppercase truncate max-w-[85px] ${

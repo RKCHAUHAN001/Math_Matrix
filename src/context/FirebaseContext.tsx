@@ -28,6 +28,7 @@ import { TopPlayerEntry, getTop50StickRanking, getTop50TrophyRanking } from '../
 export interface UserProfile {
   uid: string;
   displayName: string;
+  photoURL?: string;
   socialLink?: string;
   tierPoints?: number;
   streak: number;
@@ -46,6 +47,7 @@ export interface LeaderboardEntry {
   id?: string;
   userId: string;
   displayName: string;
+  photoURL?: string;
   socialLink?: string;
   tierPoints?: number;
   score: number;
@@ -67,6 +69,7 @@ interface FirebaseContextType {
   updateProfileNotifications: (enabled: boolean) => Promise<void>;
   updateProfileDisplayName: (newName: string) => Promise<{ success: boolean; recordsUpdated: number; error?: string }>;
   updateProfileSocialLink: (link: string) => Promise<{ success: boolean; recordsUpdated: number }>;
+  updateProfilePhoto: (newPhotoUrl: string) => Promise<{ success: boolean }>;
   addTierPoints: (points: number) => Promise<number>;
   addSticks: (amount?: number) => Promise<number>;
   submitScore: (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => Promise<void>;
@@ -250,6 +253,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const guest: UserProfile = {
       uid: 'guest_' + Math.random().toString(36).substring(2, 11),
       displayName: 'Matrix Explorer',
+      photoURL: '',
       streak: 1,
       tierPoints: 0,
       lastActiveDate: today,
@@ -317,9 +321,16 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
 
+        const effectiveName = resolvedName || (currentUser.email ? currentUser.email.split('@')[0] : 'Player');
+        let resolvedPhoto = currentUser.photoURL || firestoreProfile.photoURL || localProfile?.photoURL || '';
+        if (!resolvedPhoto && (currentUser.email || (!currentUser.isAnonymous && currentUser.displayName))) {
+          resolvedPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(effectiveName)}&background=0284c7&color=fff&bold=true`;
+        }
+
         finalProfile = {
           ...firestoreProfile,
-          displayName: resolvedName || (currentUser.email ? currentUser.email.split('@')[0] : 'Player'),
+          displayName: effectiveName,
+          photoURL: resolvedPhoto,
           highScore: mergedHighScore,
           streak: mergedStreak,
           tierPoints: mergedTierPoints,
@@ -339,6 +350,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           try {
             await updateDoc(profileRef, {
               displayName: finalProfile.displayName,
+              photoURL: finalProfile.photoURL || '',
               socialLink: finalProfile.socialLink || '',
               tierPoints: finalProfile.tierPoints || 0,
               streak: finalProfile.streak || 1,
@@ -362,9 +374,15 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           (currentUser.email ? currentUser.email.split('@')[0] : '') ||
           (localProfile?.displayName && !localProfile.displayName.toLowerCase().includes('matrix explorer') ? localProfile.displayName : 'Player');
 
+        let resolvedPhoto = currentUser.photoURL || localProfile?.photoURL || '';
+        if (!resolvedPhoto && (currentUser.email || (!currentUser.isAnonymous && currentUser.displayName))) {
+          resolvedPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=0284c7&color=fff&bold=true`;
+        }
+
         finalProfile = {
           uid: currentUser.uid,
           displayName: resolvedName,
+          photoURL: resolvedPhoto,
           socialLink: localProfile?.socialLink || '',
           tierPoints: localProfile?.tierPoints || 0,
           streak: localProfile?.streak || 1,
@@ -385,6 +403,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           try {
             await setDoc(profileRef, {
               ...finalProfile,
+              photoURL: finalProfile.photoURL || '',
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp()
             });
@@ -961,6 +980,44 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return { success: true, recordsUpdated: totalUpdated };
   };
 
+  const updateProfilePhoto = async (newPhotoUrl: string): Promise<{ success: boolean }> => {
+    const cleanPhoto = newPhotoUrl.trim();
+    setProfile(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, photoURL: cleanPhoto, updatedAt: new Date().toISOString() };
+      localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+
+    if (isOnline && user) {
+      try {
+        const ref = doc(db, 'users', user.uid);
+        await updateDoc(ref, {
+          photoURL: cleanPhoto,
+          updatedAt: serverTimestamp()
+        });
+
+        // Also update all existing scores submitted by this user in Firestore
+        try {
+          const scoresCol = collection(db, 'scores');
+          const userScoresQuery = query(scoresCol, where('userId', '==', user.uid));
+          const snap = await getDocs(userScoresQuery);
+          snap.forEach((docSnapshot) => {
+            updateDoc(doc(db, 'scores', docSnapshot.id), {
+              photoURL: cleanPhoto
+            }).catch(() => {});
+          });
+        } catch (scoreUpdateErr) {
+          console.warn("Could not sync photo across previous scores:", scoreUpdateErr);
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
+      }
+    }
+
+    return { success: true };
+  };
+
   const submitScore = async (score: number, difficulty: LeaderboardEntry['difficulty'], matrixSize: number) => {
     if (!profile || score <= 0) return;
 
@@ -1034,9 +1091,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }
 
+    const safePhoto = profile.photoURL || activeUser?.photoURL || '';
     const newScoreEntry: LeaderboardEntry = {
       userId: currentUid,
       displayName: safeDisplayName,
+      photoURL: safePhoto,
       socialLink: safeSocialLink || '',
       tierPoints: safeTierPoints,
       score,
@@ -1076,6 +1135,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           await addDoc(scoresCol, {
             userId: activeUser.uid,
             displayName: safeDisplayName,
+            photoURL: safePhoto,
             socialLink: safeSocialLink,
             tierPoints: safeTierPoints,
             score,
@@ -1125,6 +1185,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const safeDisplayName = (rawName.length >= 2 ? rawName : 'Player').slice(0, 30);
       const rawLink = profile?.socialLink?.trim();
       const safeSocialLink = (rawLink && rawLink.length > 0 && rawLink.length <= 200) ? rawLink : null;
+      const safePhoto = profile?.photoURL || activeUser?.photoURL || '';
 
       for (const entry of pendingList) {
         if (entry.score > highestPending) {
@@ -1146,6 +1207,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           await addDoc(scoresCol, {
             userId: activeUser.uid,
             displayName: safeDisplayName,
+            photoURL: entry.photoURL || safePhoto,
             socialLink: safeSocialLink,
             tierPoints: profile?.tierPoints || safeTierPoints,
             score: entry.score,
@@ -1212,6 +1274,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           id: doc.id,
           userId: data.userId,
           displayName: data.displayName,
+          photoURL: data.photoURL || '',
           socialLink: data.socialLink || '',
           tierPoints: data.tierPoints || 0,
           score: data.score,
@@ -1249,6 +1312,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return {
             userId: d.id,
             displayName: dat.displayName || '',
+            photoURL: dat.photoURL || '',
             socialLink: dat.socialLink || '',
             tierPoints: dat.tierPoints || 0,
             sticks: dat.sticks ?? 0,
@@ -1274,6 +1338,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return {
             userId: d.id,
             displayName: dat.displayName || '',
+            photoURL: dat.photoURL || '',
             socialLink: dat.socialLink || '',
             tierPoints: dat.tierPoints || 0,
             sticks: dat.sticks ?? 0,
@@ -1301,6 +1366,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       updateProfileNotifications,
       updateProfileDisplayName,
       updateProfileSocialLink,
+      updateProfilePhoto,
       addTierPoints,
       addSticks,
       submitScore,

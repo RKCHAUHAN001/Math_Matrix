@@ -8,6 +8,7 @@ import { UserProfile } from '../context/FirebaseContext';
 export interface TopPlayerEntry {
   userId: string;
   displayName: string;
+  photoURL?: string;
   socialLink?: string;
   tierPoints: number;
   sticks: number;
@@ -88,6 +89,7 @@ export function getTop50StickRanking(
       map.set(cu.userId, {
         userId: cu.userId,
         displayName: cu.displayName,
+        photoURL: cu.photoURL || '',
         socialLink: cu.socialLink || '',
         tierPoints: cu.tierPoints || 0,
         sticks: cu.sticks || 0,
@@ -101,6 +103,7 @@ export function getTop50StickRanking(
     map.set(profile.uid, {
       userId: profile.uid,
       displayName: profile.displayName,
+      photoURL: profile.photoURL || '',
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
       sticks: profile.sticks || 0,
@@ -139,6 +142,7 @@ export function getTop50TrophyRanking(
       map.set(cu.userId, {
         userId: cu.userId,
         displayName: cu.displayName,
+        photoURL: cu.photoURL || '',
         socialLink: cu.socialLink || '',
         tierPoints: cu.tierPoints || 0,
         sticks: cu.sticks || 0,
@@ -152,6 +156,7 @@ export function getTop50TrophyRanking(
     map.set(profile.uid, {
       userId: profile.uid,
       displayName: profile.displayName,
+      photoURL: profile.photoURL || '',
       socialLink: profile.socialLink || '',
       tierPoints: profile.tierPoints || 0,
       sticks: profile.sticks || 0,
@@ -181,6 +186,7 @@ export function getEnsuredTop10Scores<T extends {
   id?: string;
   userId: string;
   displayName: string;
+  photoURL?: string;
   socialLink?: string;
   tierPoints?: number;
   score: number;

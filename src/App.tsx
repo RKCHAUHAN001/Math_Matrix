@@ -33,6 +33,7 @@ import { AdMobSimulator } from './components/AdMobSimulator';
 import { PlayerBadge } from './components/PlayerBadge';
 import { TiersModal } from './components/TiersModal';
 import { SignInView } from './components/SignInView';
+import { UserAvatar } from './components/UserAvatar';
 import { getTierProgress } from './utils/tiers';
 import { THEMES } from './utils/themes';
 import sounds from './utils/audio';
@@ -310,23 +311,39 @@ function GameDashboard() {
       <header className="w-full flex justify-between items-start z-10 shrink-0">
         <button
           onClick={() => { sounds.playClick(); setShowTiersModal(true); }}
-          className="flex flex-col items-start text-left group active:scale-95 transition-all select-none focus:outline-none"
+          className="flex items-center gap-2.5 text-left group active:scale-95 transition-all select-none focus:outline-none"
           title="Open Math Quiz Tiers & Title Progress"
         >
-          <div className="flex items-center gap-1.5">
-            <span className="text-xl font-black tracking-wide text-zinc-900 leading-none font-sans truncate max-w-[170px] group-hover:text-indigo-600 transition-colors">
-              {profile ? profile.displayName : 'Player'}
-            </span>
-            <span className="text-[10px] text-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity">
-              ↗
-            </span>
-          </div>
-          <div className="mt-1.5 flex items-center">
-            <PlayerBadge 
-              points={profile?.tierPoints || 0} 
-              size="sm" 
-              showIcon={true}
+          <div className="relative">
+            <UserAvatar 
+              photoURL={profile?.photoURL || user?.photoURL} 
+              name={profile ? profile.displayName : 'Player'} 
+              size="md" 
+              className="ring-2 ring-transparent group-hover:ring-indigo-400/60 transition-all shadow-xs"
             />
+            {user && !user.isAnonymous && (
+              <span 
+                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-500/20" 
+                title="Cloud Synced" 
+              />
+            )}
+          </div>
+          <div className="flex flex-col items-start min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg sm:text-xl font-black tracking-wide text-zinc-900 leading-none font-sans truncate max-w-[150px] group-hover:text-indigo-600 transition-colors">
+                {profile ? profile.displayName : 'Player'}
+              </span>
+              <span className="text-[10px] text-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity">
+                ↗
+              </span>
+            </div>
+            <div className="mt-1 flex items-center">
+              <PlayerBadge 
+                points={profile?.tierPoints || 0} 
+                size="sm" 
+                showIcon={true}
+              />
+            </div>
           </div>
         </button>
 
@@ -672,15 +689,22 @@ function GameDashboard() {
 
                 <ChallengeShare score={profile.highScore} difficulty={selectedDifficulty} theme={theme} />
 
-                <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm flex justify-between items-center">
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-indigo-600 mb-0.5">☁️ Account Cloud Sync</p>
-                    <p className="text-[11px] font-bold text-zinc-900 uppercase truncate">
-                      {user && !user.isAnonymous ? (user.email || user.displayName || 'Synced User') : 'Guest Explorer'}
-                    </p>
-                    <p className="text-[9px] text-zinc-500 truncate">
-                      {user && !user.isAnonymous ? 'All high scores saved safely to cloud' : 'Local Cache Storage Only'}
-                    </p>
+                <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar
+                      photoURL={profile?.photoURL || user?.photoURL}
+                      name={profile.displayName}
+                      size="md"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-indigo-600 mb-0.5">☁️ Account Cloud Sync</p>
+                      <p className="text-[11px] font-bold text-zinc-900 uppercase truncate">
+                        {user && !user.isAnonymous ? (user.email || user.displayName || 'Synced User') : 'Guest Explorer'}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 truncate">
+                        {user && !user.isAnonymous ? 'All high scores saved safely to cloud' : 'Local Cache Storage Only'}
+                      </p>
+                    </div>
                   </div>
                   {user && !user.isAnonymous ? (
                     <button

@@ -7,6 +7,7 @@
       "properties": {
         "uid": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "displayName": { "type": "string", "minLength": 2, "maxLength": 30 },
+        "photoURL": { "type": "string" },
         "socialLink": { "type": "string" },
         "tierPoints": { "type": "number" },
         "streak": { "type": "number" },
@@ -28,6 +29,7 @@
         "scoreId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "userId": { "type": "string", "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "displayName": { "type": "string", "minLength": 2, "maxLength": 30 },
+        "photoURL": { "type": "string" },
         "socialLink": { "type": "string" },
         "tierPoints": { "type": "number" },
         "score": { "type": "number" },
