@@ -18,35 +18,39 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
   const progress = getTierProgress(currentPoints);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn select-none">
       <div 
-        className="w-full max-w-md max-h-[88vh] flex flex-col rounded-t-[32px] sm:rounded-3xl border border-white/10 bg-zinc-950 shadow-2xl overflow-hidden animate-slideUp sm:animate-scaleUp"
+        className="w-full max-w-md max-h-[88vh] flex flex-col rounded-t-[32px] sm:rounded-3xl border border-zinc-200/90 bg-[#f7f7f7] shadow-2xl overflow-hidden animate-slideUp sm:animate-scaleUp relative text-zinc-900"
+        style={{ backgroundColor: '#f7f7f7' }}
       >
-        {/* Drag Handle Bar (matching Google Play reference image) */}
-        <div className="pt-3 pb-2 flex justify-center shrink-0">
-          <div className="w-10 h-1 bg-zinc-700/80 rounded-full" />
+        {/* Subtle coordinate blueprint grid matching game theme */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#000000_1px,transparent_1px),linear-gradient(to_bottom,#000000_1px,transparent_1px)] bg-[size:28px_28px]" />
+
+        {/* Drag Handle Bar */}
+        <div className="pt-3 pb-2 flex justify-center shrink-0 relative z-10">
+          <div className="w-10 h-1 bg-zinc-300 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="px-6 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
+        <div className="px-6 py-3.5 bg-white/95 backdrop-blur-md border-b border-zinc-200/90 flex items-center justify-between shrink-0 relative z-10 shadow-xs">
           <div>
-            <h2 className="text-base font-black tracking-wide text-white font-sans">
+            <h2 className="text-base font-black tracking-wider text-zinc-900 font-sans uppercase">
               Math Quiz Tiers
             </h2>
-            <p className="text-[11px] text-zinc-400 font-medium">
-              Total Score: <span className="text-amber-400 font-bold font-mono">{currentPoints.toLocaleString()} pts</span>
+            <p className="text-[11px] text-zinc-500 font-medium">
+              Total Score: <span className="text-amber-600 font-bold font-mono">{currentPoints.toLocaleString()} pts</span>
             </p>
           </div>
           <button
             onClick={() => { sounds.playClick(); onClose(); }}
-            className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition active:scale-95 border border-white/10"
+            className="w-9 h-9 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900 flex items-center justify-center transition active:scale-95 border border-zinc-200/90 shadow-sm"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Vertical Timeline Stepper (Matching Screenshot reference) */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-0">
+        {/* Vertical Timeline Stepper */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-0 relative z-10">
           {MATH_TIERS.map((tier, index) => {
             const isUnlocked = currentPoints >= tier.pointsRequired;
             const isCurrent = progress.currentTier.tier === tier.tier;
@@ -72,37 +76,37 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
                   <div
                     className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl transition-all relative z-10 ${
                       isCurrent
-                        ? `${tier.badgeBg} ${tier.badgeBorder} border-2 ${tier.glowClass} scale-105 ring-2 ring-white/30`
+                        ? `${tier.badgeBg} ${tier.badgeBorder} border-2 ${tier.glowClass} scale-105 ring-2 ring-indigo-500/30`
                         : isUnlocked
-                        ? 'bg-zinc-900 border border-white/20 text-white'
-                        : 'bg-zinc-950 border border-white/10 text-zinc-600 grayscale opacity-40'
+                        ? `${tier.badgeBg} ${tier.badgeBorder} border shadow-xs`
+                        : 'bg-zinc-200/60 border border-zinc-300/80 text-zinc-400 grayscale opacity-45'
                     }`}
                   >
                     <span>{tier.icon}</span>
 
                     {/* Unlocked checkmark pill */}
                     {isUnlocked && !isCurrent && (
-                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-black flex items-center justify-center text-[9px] font-black shadow-sm">
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-xs">
                         <Check className="w-2.5 h-2.5 stroke-[3]" />
                       </div>
                     )}
 
                     {/* Current Tier indicator */}
                     {isCurrent && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-cyan-400 text-black flex items-center justify-center text-[8px] font-black shadow-sm animate-pulse">
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[8px] font-black shadow-xs animate-pulse">
                         ★
                       </div>
                     )}
                   </div>
 
-                  {/* Vertical Connector Line (matching screenshot track) */}
+                  {/* Vertical Connector Line */}
                   {!isLast && (
-                    <div className="w-1 h-16 bg-zinc-800/80 rounded-full relative my-1 overflow-hidden">
+                    <div className="w-1 h-16 bg-zinc-200 rounded-full relative my-1 overflow-hidden">
                       {lineActive ? (
-                        <div className="w-full h-full bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                        <div className="w-full h-full bg-indigo-500 rounded-full shadow-xs" />
                       ) : isCurrent ? (
                         <div
-                          className="w-full bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]"
+                          className="w-full bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full transition-all duration-500 shadow-xs"
                           style={{ height: `${Math.max(15, partialPercent)}%` }}
                         />
                       ) : null}
@@ -119,15 +123,15 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
                           isCurrent
                             ? `${tier.badgeText} text-base font-extrabold`
                             : isUnlocked
-                            ? 'text-white'
-                            : 'text-zinc-500'
+                            ? 'text-zinc-900'
+                            : 'text-zinc-400'
                         }`}
                       >
                         {tier.name}
                       </h3>
 
                       {isCurrent && (
-                        <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+                        <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
                           Active Tier
                         </span>
                       )}
@@ -136,10 +140,10 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
                     <span
                       className={`text-xs font-mono font-bold shrink-0 ${
                         isCurrent
-                          ? 'text-cyan-400'
+                          ? 'text-indigo-600 font-extrabold'
                           : isUnlocked
-                          ? 'text-zinc-400'
-                          : 'text-zinc-600'
+                          ? 'text-zinc-600'
+                          : 'text-zinc-400'
                       }`}
                     >
                       {tier.pointsRequired === 0
@@ -150,13 +154,13 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
                     </span>
                   </div>
 
-                  {/* Progress display in current tier (matching reference screenshot) */}
+                  {/* Progress display in current tier */}
                   {isCurrent && nextTier && (
-                    <div className="mt-1.5 p-2 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex items-center justify-between">
-                      <span className="text-[10px] text-cyan-300 font-medium">
-                        Progress to <span className="font-bold text-white">{nextTier.name}</span>
+                    <div className="mt-2 p-2.5 rounded-xl bg-white border border-indigo-100/90 shadow-sm flex items-center justify-between">
+                      <span className="text-[10px] text-zinc-600 font-medium">
+                        Progress to <span className="font-bold text-zinc-900">{nextTier.name}</span>
                       </span>
-                      <span className="text-[10px] font-mono font-bold text-cyan-300">
+                      <span className="text-[10px] font-mono font-bold text-indigo-600">
                         {progress.pointsInTier} / {nextTier.pointsRequired - tier.pointsRequired} pts ({progress.percentage}%)
                       </span>
                     </div>
@@ -165,10 +169,10 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
                   <p
                     className={`text-[10.5px] mt-1 leading-relaxed ${
                       isCurrent
-                        ? 'text-zinc-300 font-medium'
+                        ? 'text-zinc-700 font-medium'
                         : isUnlocked
-                        ? 'text-zinc-400'
-                        : 'text-zinc-600'
+                        ? 'text-zinc-500'
+                        : 'text-zinc-400'
                     }`}
                   >
                     {tier.description}
@@ -180,10 +184,10 @@ export const TiersModal: React.FC<TiersModalProps> = ({ currentPoints, onClose }
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-zinc-900/90 text-center shrink-0">
+        <div className="p-4 border-t border-zinc-200/90 bg-white/95 backdrop-blur-md text-center shrink-0 relative z-10">
           <button
             onClick={() => { sounds.playClick(); onClose(); }}
-            className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white text-xs font-black uppercase tracking-widest transition active:scale-95"
+            className="w-full py-3 rounded-2xl bg-zinc-900 hover:bg-black text-white text-xs font-black uppercase tracking-widest transition active:scale-95 shadow-sm"
           >
             Close
           </button>

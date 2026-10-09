@@ -1317,16 +1317,16 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
                   onClose();
                 }
               }}
-              className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
+              className="w-9 h-9 rounded-xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
             >
-              <ChevronLeft className="w-4 h-4 text-zinc-300" />
+              <ChevronLeft className="w-4 h-4 text-zinc-700" />
             </button>
 
             <div className="text-center flex-1 mx-2">
-              <h2 className="text-base font-black tracking-[0.2em] text-white leading-none uppercase flex items-center justify-center gap-1.5">
-                <Globe className="w-4 h-4 text-blue-400 animate-pulse" /> Play Online
+              <h2 className="text-base font-black tracking-[0.2em] text-black leading-none uppercase flex items-center justify-center gap-1.5">
+                <Globe className="w-4 h-4 text-blue-600 animate-pulse" /> Play Online
               </h2>
-              <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1">
+              <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1 font-bold">
                 {lobbyStep === 'choose_mode' ? 'Select Game Mode' : `${playMode === 'advance' ? 'Advance' : 'Normal'} Mode Queue`}
               </p>
             </div>
@@ -1572,16 +1572,16 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           <div className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
             <button 
               onClick={handleAbortMatch}
-              className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
+              className="w-9 h-9 rounded-xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
             >
-              <ChevronLeft className="w-4 h-4 text-zinc-300" />
+              <ChevronLeft className="w-4 h-4 text-zinc-700" />
             </button>
 
             <div className="text-center flex-1 mx-2">
-              <h2 className="text-base font-black tracking-[0.2em] text-white leading-none uppercase">
+              <h2 className="text-base font-black tracking-[0.2em] text-black leading-none uppercase">
                 Custom Game Room ({playMode.toUpperCase()})
               </h2>
-              <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1">
+              <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1 font-bold">
                 Waiting for joiner
               </p>
             </div>
@@ -1634,16 +1634,16 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           <div className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
             <button 
               onClick={() => { sounds.playClick(); setJoinError(null); setOnlineSubMode('lobby'); }}
-              className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-center text-white active:scale-95 hover:bg-zinc-800 transition-all shadow-md shrink-0"
+              className="w-9 h-9 rounded-xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
             >
-              <ChevronLeft className="w-4 h-4 text-zinc-300" />
+              <ChevronLeft className="w-4 h-4 text-zinc-700" />
             </button>
 
             <div className="text-center flex-1 mx-2">
-              <h2 className="text-base font-black tracking-[0.2em] text-white leading-none uppercase">
+              <h2 className="text-base font-black tracking-[0.2em] text-black leading-none uppercase">
                 Join Game Room
               </h2>
-              <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1">
+              <p className="text-[7px] text-zinc-500 uppercase tracking-[0.15em] mt-1 font-bold">
                 Enter shared friend code
               </p>
             </div>

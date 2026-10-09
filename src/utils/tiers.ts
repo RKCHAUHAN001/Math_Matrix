@@ -25,10 +25,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 0,
     badgeStyle: "Sky Cyan / Wing",
     description: "Starting out; embarking on your mathematical quiz journey.",
-    badgeBg: "bg-sky-950/40",
-    badgeBorder: "border-sky-500/40",
-    badgeText: "text-sky-300",
-    glowClass: "shadow-[0_0_8px_rgba(56,189,248,0.25)]",
+    badgeBg: "bg-sky-50",
+    badgeBorder: "border-sky-300",
+    badgeText: "text-sky-700",
+    glowClass: "shadow-xs",
     icon: "🪶"
   },
   {
@@ -38,10 +38,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 100,
     badgeStyle: "Slate / Light Gray",
     description: "Getting familiar with basic arithmetic and quiz timing.",
-    badgeBg: "bg-slate-700/35",
-    badgeBorder: "border-slate-400/50",
-    badgeText: "text-slate-200",
-    glowClass: "shadow-[0_0_8px_rgba(148,163,184,0.25)]",
+    badgeBg: "bg-slate-100",
+    badgeBorder: "border-slate-300",
+    badgeText: "text-slate-700",
+    glowClass: "shadow-xs",
     icon: "🛡️"
   },
   {
@@ -51,10 +51,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 200,
     badgeStyle: "Silver Gray",
     description: "Building confidence with core rules, operations, and problem structures.",
-    badgeBg: "bg-zinc-700/40",
-    badgeBorder: "border-zinc-300/50",
-    badgeText: "text-zinc-100",
-    glowClass: "shadow-[0_0_10px_rgba(228,228,231,0.3)]",
+    badgeBg: "bg-zinc-100",
+    badgeBorder: "border-zinc-300",
+    badgeText: "text-zinc-800",
+    glowClass: "shadow-xs",
     icon: "🛡️"
   },
   {
@@ -64,10 +64,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 400,
     badgeStyle: "Bronze / Coral",
     description: "Grasps foundational concepts well, navigating multi-step equations.",
-    badgeBg: "bg-orange-950/40",
-    badgeBorder: "border-orange-500/50",
-    badgeText: "text-orange-300",
-    glowClass: "shadow-[0_0_10px_rgba(249,115,22,0.3)]",
+    badgeBg: "bg-orange-50",
+    badgeBorder: "border-orange-300",
+    badgeText: "text-orange-700",
+    glowClass: "shadow-xs",
     icon: "🎖️"
   },
   {
@@ -77,10 +77,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 800,
     badgeStyle: "Amber Orange",
     description: "Fast on basic arithmetic and word problems, working on higher-level problem solving.",
-    badgeBg: "bg-amber-950/45",
-    badgeBorder: "border-amber-500/60",
-    badgeText: "text-amber-400",
-    glowClass: "shadow-[0_0_12px_rgba(245,158,11,0.35)]",
+    badgeBg: "bg-amber-50",
+    badgeBorder: "border-amber-300",
+    badgeText: "text-amber-800",
+    glowClass: "shadow-xs",
     icon: "🎖️"
   },
   {
@@ -90,10 +90,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 1600,
     badgeStyle: "Bright Yellow",
     description: "Reliable computation, high accuracy on competitive level math.",
-    badgeBg: "bg-yellow-950/45",
-    badgeBorder: "border-yellow-400/60",
-    badgeText: "text-yellow-300",
-    glowClass: "shadow-[0_0_14px_rgba(250,204,21,0.35)]",
+    badgeBg: "bg-yellow-50",
+    badgeBorder: "border-yellow-300",
+    badgeText: "text-yellow-800",
+    glowClass: "shadow-xs",
     icon: "🏅"
   },
   {
@@ -103,10 +103,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 2400,
     badgeStyle: "Jade Green",
     description: "Solid understanding of geometry, proofs, and core mathematical concepts.",
-    badgeBg: "bg-emerald-950/45",
-    badgeBorder: "border-emerald-400/60",
-    badgeText: "text-emerald-300",
-    glowClass: "shadow-[0_0_14px_rgba(52,211,153,0.35)]",
+    badgeBg: "bg-emerald-50",
+    badgeBorder: "border-emerald-300",
+    badgeText: "text-emerald-800",
+    glowClass: "shadow-xs",
     icon: "🏅"
   },
   {
@@ -116,10 +116,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 3200,
     badgeStyle: "Emerald / Cyan",
     description: "Quick to spot numerical patterns, equations, and algebra tricks efficiently.",
-    badgeBg: "bg-cyan-950/45",
-    badgeBorder: "border-cyan-400/60",
-    badgeText: "text-cyan-300",
-    glowClass: "shadow-[0_0_16px_rgba(34,211,238,0.4)]",
+    badgeBg: "bg-teal-50",
+    badgeBorder: "border-teal-300",
+    badgeText: "text-teal-800",
+    glowClass: "shadow-xs",
     icon: "🏆"
   },
   {
@@ -129,10 +129,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 4000,
     badgeStyle: "Royal Purple",
     description: "Strong grasp of advanced formulas and problem shortcuts under time pressure.",
-    badgeBg: "bg-purple-950/45",
-    badgeBorder: "border-purple-400/60",
-    badgeText: "text-purple-300",
-    glowClass: "shadow-[0_0_16px_rgba(192,132,252,0.4)]",
+    badgeBg: "bg-purple-50",
+    badgeBorder: "border-purple-300",
+    badgeText: "text-purple-800",
+    glowClass: "shadow-xs",
     icon: "🏆"
   },
   {
@@ -142,10 +142,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 5000,
     badgeStyle: "Deep Sapphire",
     description: "Exceptional reasoning, highly precise, rarely makes analytical or calculation errors.",
-    badgeBg: "bg-blue-950/50",
-    badgeBorder: "border-blue-400/70",
-    badgeText: "text-blue-300",
-    glowClass: "shadow-[0_0_18px_rgba(96,165,250,0.45)]",
+    badgeBg: "bg-blue-50",
+    badgeBorder: "border-blue-300",
+    badgeText: "text-blue-800",
+    glowClass: "shadow-xs",
     icon: "👑"
   },
   {
@@ -155,10 +155,10 @@ export const MATH_TIERS: MathTier[] = [
     pointsRequired: 6000,
     badgeStyle: "Glowing Gold / Diamond",
     description: "Flawless accuracy, lightning speed, tackles complex multi-step problems with ease.",
-    badgeBg: "bg-gradient-to-r from-amber-500/25 via-yellow-400/30 to-amber-500/25",
-    badgeBorder: "border-yellow-300",
-    badgeText: "text-yellow-200 font-extrabold animate-pulse",
-    glowClass: "shadow-[0_0_22px_rgba(253,224,71,0.6)] ring-1 ring-yellow-400/60",
+    badgeBg: "bg-gradient-to-r from-amber-100 via-yellow-100 to-amber-100",
+    badgeBorder: "border-amber-400",
+    badgeText: "text-amber-900 font-extrabold animate-pulse",
+    glowClass: "shadow-xs ring-1 ring-amber-300/80",
     icon: "💎"
   }
 ];
