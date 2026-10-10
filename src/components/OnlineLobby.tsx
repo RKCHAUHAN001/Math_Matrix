@@ -31,6 +31,7 @@ import {
   Swords
 } from 'lucide-react';
 import { PlayerBadge } from './PlayerBadge';
+import { UserAvatar } from './UserAvatar';
 import { 
   doc, 
   setDoc, 
@@ -275,6 +276,24 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   const playModeRef = useRef<'normal' | 'advance'>(playMode);
   playModeRef.current = playMode;
 
+  // Cleanup on unmount if user closes modal during waiting or matchmaking
+  useEffect(() => {
+    return () => {
+      const targetId = activeMatchIdRef.current;
+      activeMatchIdRef.current = null;
+      if (targetId) {
+        try {
+          const matchRef = doc(db, 'matches', targetId);
+          updateDoc(matchRef, { 
+            status: 'abandoned',
+            winnerId: 'none',
+            updatedAt: serverTimestamp() 
+          }).catch(() => {});
+        } catch (e) {}
+      }
+    };
+  }, []);
+
   // Search timer during matchmaking
   useEffect(() => {
     let interval: any = null;
@@ -370,7 +389,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           };
           setMatchData(finalMatch);
           setOnlineSubMode('game_over');
-          if (finalMatch.winnerId === currentUid) {
+          if (finalMatch.winnerId === currentUid && (matchData.player1Score || 0) > (matchData.player2Score || 0)) {
             sounds.playSuccess();
             if (!trophyAwarded) {
               setTrophyAwarded(true);
@@ -413,6 +432,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     
     const unsubscribe = onSnapshot(matchRef, (snapshot) => {
       if (!isSubscribed) return;
+      // Guard: Ignore events if the active match was cleared or does not match
+      if (!activeMatchIdRef.current || activeMatchIdRef.current !== activeMatchId) return;
 
       if (snapshot.exists()) {
         const data = snapshot.data();
@@ -443,17 +464,22 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           sounds.playSuccess();
         }
 
-        // Match Completed
+        // Match Completed (Natural end of match)
         if (data.status === 'completed') {
           setOnlineSubMode('game_over');
-          if (data.winnerId === currentUid) {
+          const isP1 = currentUid === data.player1Id;
+          const myScore = isP1 ? (data.player1Score || 0) : (data.player2Score || 0);
+          const oppScore = isP1 ? (data.player2Score || 0) : (data.player1Score || 0);
+          const isRealWinner = data.winnerId === currentUid && myScore > oppScore;
+
+          if (isRealWinner) {
             sounds.playSuccess();
             if (!trophyAwarded) {
               setTrophyAwarded(true);
               incrementTrophyDirectly();
               addTierPoints(10); // Online Match Win: 10 points
             }
-          } else if (data.winnerId === 'draw') {
+          } else if (data.winnerId === 'draw' || myScore === oppScore) {
             sounds.playSuccess();
           } else {
             sounds.playFailure();
@@ -481,22 +507,30 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           }
         }
 
-        // Abandoned match / Rage quit -> instant victory for the remaining player!
+        // Abandoned match / Rage quit / Cancel
         if (data.status === 'abandoned') {
-          sounds.playSuccess();
+          // If this client was still in matchmaking, room waiting, or lobby, simply reset to lobby
+          if (onlineSubModeRef.current === 'matchmaking' || onlineSubModeRef.current === 'room_waiting' || onlineSubModeRef.current === 'lobby') {
+            resetToLobby();
+            return;
+          }
+
+          // In active gameplay: handle opponent quitting
+          const wasOpponentAbandon = data.winnerId === currentUid;
           setMatchData({
             ...data,
             status: 'completed',
-            winnerId: currentUid,
-            winnerName: currentDisplayName,
-            abandonedByOpponent: true
+            winnerId: data.winnerId || 'none',
+            winnerName: data.winnerName || 'Opponent',
+            abandonedByOpponent: wasOpponentAbandon
           });
           setOnlineSubMode('game_over');
-          if (!trophyAwarded) {
-            setTrophyAwarded(true);
-            incrementTrophyDirectly();
-            addTierPoints(10);
+          if (wasOpponentAbandon) {
+            sounds.playSuccess();
+          } else {
+            sounds.playFailure();
           }
+          // Never award trophy on abandoned matches; trophies are strictly awarded when completing and winning a full match
         }
       }
     }, (err) => {
@@ -570,6 +604,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
   }, [onlineSubMode, isBotMatch, currentUid, currentDisplayName, playMode]);
 
   const resetToLobby = () => {
+    activeMatchIdRef.current = null;
     setActiveMatchId(null);
     setMatchData(null);
     setSelectedIndices([]);
@@ -585,17 +620,72 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
     setOnlineSubMode('lobby');
   };
 
-  const handleAbortMatch = async () => {
+  // Dedicated cancel handler for matchmaking search
+  const handleCancelMatchmaking = async () => {
+    sounds.playClick();
     const targetId = activeMatchIdRef.current;
+    // Immediately disarm any active match tracking
+    activeMatchIdRef.current = null;
+    resetToLobby();
+
     if (targetId && !isBotMatch) {
       try {
         const matchRef = doc(db, 'matches', targetId);
-        await updateDoc(matchRef, { status: 'abandoned', updatedAt: serverTimestamp() });
+        await updateDoc(matchRef, { 
+          status: 'abandoned', 
+          winnerId: 'none',
+          updatedAt: serverTimestamp() 
+        });
+      } catch (err) {
+        console.warn("Error cancelling matchmaking in Firestore: ", err);
+      }
+    }
+  };
+
+  // Dedicated cancel handler for custom private room waiting
+  const handleCancelRoomWaiting = async () => {
+    sounds.playClick();
+    const targetId = activeMatchIdRef.current;
+    activeMatchIdRef.current = null;
+    resetToLobby();
+
+    if (targetId && !isBotMatch) {
+      try {
+        const matchRef = doc(db, 'matches', targetId);
+        await updateDoc(matchRef, { 
+          status: 'abandoned', 
+          winnerId: 'none',
+          updatedAt: serverTimestamp() 
+        });
+      } catch (err) {
+        console.warn("Error cancelling room waiting in Firestore: ", err);
+      }
+    }
+  };
+
+  // Abort / forfeit handler for in-progress active game
+  const handleAbortMatch = async () => {
+    sounds.playClick();
+    const targetId = activeMatchIdRef.current;
+    const currentData = matchData;
+    activeMatchIdRef.current = null;
+    resetToLobby();
+
+    if (targetId && !isBotMatch && currentData) {
+      try {
+        const matchRef = doc(db, 'matches', targetId);
+        const opponentId = currentUid === currentData.player1Id ? currentData.player2Id : currentData.player1Id;
+        const opponentName = currentUid === currentData.player1Id ? currentData.player2Name : currentData.player1Name;
+        await updateDoc(matchRef, { 
+          status: 'abandoned', 
+          winnerId: opponentId || 'none',
+          winnerName: opponentName || 'Opponent',
+          updatedAt: serverTimestamp() 
+        });
       } catch (err) {
         console.warn("Error setting abort status: ", err);
       }
     }
-    resetToLobby();
   };
 
   // RANDOM MATCHMAKING ENGINE
@@ -1490,7 +1580,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           {/* TOP CONTROLS */}
           <div className="w-full flex justify-between items-center mb-4">
             <button 
-              onClick={handleAbortMatch}
+              onClick={handleCancelMatchmaking}
               className="px-3.5 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-[10px] font-black uppercase text-zinc-400 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
             >
               <ChevronLeft className="w-3.5 h-3.5" /> Cancel
@@ -1507,8 +1597,8 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
               
               {/* YOU */}
               <div className="flex flex-col items-center flex-1">
-                <div className="relative w-16 h-16 rounded-full border-2 border-emerald-500 bg-zinc-950 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse mb-2">
-                  <User className="w-8 h-8 text-emerald-400" />
+                <div className="relative mb-2">
+                  <UserAvatar photoURL={profile?.photoURL} name={currentDisplayName} size="md" />
                 </div>
                 <span className="text-[10px] uppercase font-black text-white tracking-widest leading-none">YOU</span>
                 <span className="text-[8px] text-zinc-400 mt-1 font-bold font-mono truncate max-w-[85px]">
@@ -1571,7 +1661,7 @@ export const OnlineLobby: React.FC<OnlineLobbyProps> = ({ user, profile, theme, 
           {/* HEADER */}
           <div className="flex items-center justify-between w-full mb-3 shrink-0 relative z-30">
             <button 
-              onClick={handleAbortMatch}
+              onClick={handleCancelRoomWaiting}
               className="w-9 h-9 rounded-xl bg-white border border-zinc-200/90 flex items-center justify-center text-zinc-700 active:scale-95 hover:bg-zinc-100 transition-all shadow-sm shrink-0"
             >
               <ChevronLeft className="w-4 h-4 text-zinc-700" />
